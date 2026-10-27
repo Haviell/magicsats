@@ -10,33 +10,154 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ContatoRouteImport } from './routes/contato'
+import { Route as FaqRouteImport } from './routes/faq'
+import { Route as LgpdRouteImport } from './routes/lgpd'
+import { Route as PrivacidadeRouteImport } from './routes/privacidade'
+import { Route as RifaRouteImport } from './routes/rifa'
+import { Route as SobreRouteImport } from './routes/sobre'
+import { Route as TermosRouteImport } from './routes/termos'
+import { Route as TransparenciaRouteImport } from './routes/transparencia'
+import { Route as AuthRedefinirSenhaRouteImport } from './routes/auth.redefinir-senha'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ContatoRoute = ContatoRouteImport.update({
+  id: '/contato',
+  path: '/contato',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LgpdRoute = LgpdRouteImport.update({
+  id: '/lgpd',
+  path: '/lgpd',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacidadeRoute = PrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RifaRoute = RifaRouteImport.update({
+  id: '/rifa',
+  path: '/rifa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SobreRoute = SobreRouteImport.update({
+  id: '/sobre',
+  path: '/sobre',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermosRoute = TermosRouteImport.update({
+  id: '/termos',
+  path: '/termos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TransparenciaRoute = TransparenciaRouteImport.update({
+  id: '/transparencia',
+  path: '/transparencia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRedefinirSenhaRoute = AuthRedefinirSenhaRouteImport.update({
+  id: '/auth/redefinir-senha',
+  path: '/auth/redefinir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/contato': typeof ContatoRoute
+  '/faq': typeof FaqRoute
+  '/lgpd': typeof LgpdRoute
+  '/privacidade': typeof PrivacidadeRoute
+  '/rifa': typeof RifaRoute
+  '/sobre': typeof SobreRoute
+  '/termos': typeof TermosRoute
+  '/transparencia': typeof TransparenciaRoute
+  '/auth/redefinir-senha': typeof AuthRedefinirSenhaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/contato': typeof ContatoRoute
+  '/faq': typeof FaqRoute
+  '/lgpd': typeof LgpdRoute
+  '/privacidade': typeof PrivacidadeRoute
+  '/rifa': typeof RifaRoute
+  '/sobre': typeof SobreRoute
+  '/termos': typeof TermosRoute
+  '/transparencia': typeof TransparenciaRoute
+  '/auth/redefinir-senha': typeof AuthRedefinirSenhaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/contato': typeof ContatoRoute
+  '/faq': typeof FaqRoute
+  '/lgpd': typeof LgpdRoute
+  '/privacidade': typeof PrivacidadeRoute
+  '/rifa': typeof RifaRoute
+  '/sobre': typeof SobreRoute
+  '/termos': typeof TermosRoute
+  '/transparencia': typeof TransparenciaRoute
+  '/auth/redefinir-senha': typeof AuthRedefinirSenhaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/contato'
+    | '/faq'
+    | '/lgpd'
+    | '/privacidade'
+    | '/rifa'
+    | '/sobre'
+    | '/termos'
+    | '/transparencia'
+    | '/auth/redefinir-senha'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/contato'
+    | '/faq'
+    | '/lgpd'
+    | '/privacidade'
+    | '/rifa'
+    | '/sobre'
+    | '/termos'
+    | '/transparencia'
+    | '/auth/redefinir-senha'
+  id:
+    | '__root__'
+    | '/'
+    | '/contato'
+    | '/faq'
+    | '/lgpd'
+    | '/privacidade'
+    | '/rifa'
+    | '/sobre'
+    | '/termos'
+    | '/transparencia'
+    | '/auth/redefinir-senha'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ContatoRoute: typeof ContatoRoute
+  FaqRoute: typeof FaqRoute
+  LgpdRoute: typeof LgpdRoute
+  PrivacidadeRoute: typeof PrivacidadeRoute
+  RifaRoute: typeof RifaRoute
+  SobreRoute: typeof SobreRoute
+  TermosRoute: typeof TermosRoute
+  TransparenciaRoute: typeof TransparenciaRoute
+  AuthRedefinirSenhaRoute: typeof AuthRedefinirSenhaRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +169,83 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/contato': {
+      id: '/contato'
+      path: '/contato'
+      fullPath: '/contato'
+      preLoaderRoute: typeof ContatoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lgpd': {
+      id: '/lgpd'
+      path: '/lgpd'
+      fullPath: '/lgpd'
+      preLoaderRoute: typeof LgpdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacidade': {
+      id: '/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof PrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rifa': {
+      id: '/rifa'
+      path: '/rifa'
+      fullPath: '/rifa'
+      preLoaderRoute: typeof RifaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sobre': {
+      id: '/sobre'
+      path: '/sobre'
+      fullPath: '/sobre'
+      preLoaderRoute: typeof SobreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/termos': {
+      id: '/termos'
+      path: '/termos'
+      fullPath: '/termos'
+      preLoaderRoute: typeof TermosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/transparencia': {
+      id: '/transparencia'
+      path: '/transparencia'
+      fullPath: '/transparencia'
+      preLoaderRoute: typeof TransparenciaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/redefinir-senha': {
+      id: '/auth/redefinir-senha'
+      path: '/auth/redefinir-senha'
+      fullPath: '/auth/redefinir-senha'
+      preLoaderRoute: typeof AuthRedefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ContatoRoute: ContatoRoute,
+  FaqRoute: FaqRoute,
+  LgpdRoute: LgpdRoute,
+  PrivacidadeRoute: PrivacidadeRoute,
+  RifaRoute: RifaRoute,
+  SobreRoute: SobreRoute,
+  TermosRoute: TermosRoute,
+  TransparenciaRoute: TransparenciaRoute,
+  AuthRedefinirSenhaRoute: AuthRedefinirSenhaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
