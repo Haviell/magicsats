@@ -190,6 +190,7 @@ export function useAuth() {
       email: cleanEmail,
       password,
       options: {
+        emailRedirectTo: typeof window !== 'undefined' ? window.location.origin + '/rifa' : undefined,
         data: {
           username: cleanNick,
           name: cleanNick,
