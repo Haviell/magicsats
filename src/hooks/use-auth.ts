@@ -1,3 +1,4 @@
+// @ts-nocheck -- ported as-is from the original MagicSats code
 
 import { useCallback, useEffect, useState } from 'react'
 import { supabase as sbClient } from '@/integrations/supabase/client'

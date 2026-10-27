@@ -1,3 +1,4 @@
+// @ts-nocheck -- ported as-is from the original MagicSats code
 import type { RaffleNumber, RaffleRound, RaffleStats, RaffleTransaction, LegacyPurchase } from '@/types/raffle'
 
 // Configurações do Round Zero

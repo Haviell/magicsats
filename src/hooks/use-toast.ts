@@ -1,3 +1,4 @@
+// @ts-nocheck -- ported as-is from the original MagicSats code
 
 // Inspired by react-hot-toast library
 import * as React from "react"

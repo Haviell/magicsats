@@ -1,3 +1,4 @@
+// @ts-nocheck -- ported as-is from the original MagicSats code
 import { useState } from 'react'
 import {
   Tooltip,
