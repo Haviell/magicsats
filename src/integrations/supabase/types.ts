@@ -20,6 +20,8 @@ export type Database = {
           created_at: string
           id: string
           in_game_balance: number
+          marketing_opt_in: boolean
+          transactional_opt_in: boolean
           username: string
         }
         Insert: {
@@ -27,6 +29,8 @@ export type Database = {
           created_at?: string
           id: string
           in_game_balance?: number
+          marketing_opt_in?: boolean
+          transactional_opt_in?: boolean
           username: string
         }
         Update: {
@@ -34,6 +38,8 @@ export type Database = {
           created_at?: string
           id?: string
           in_game_balance?: number
+          marketing_opt_in?: boolean
+          transactional_opt_in?: boolean
           username?: string
         }
         Relationships: []
@@ -152,23 +158,61 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      get_auth_email_by_username: { Args: { uname: string }; Returns: string }
-      is_round_winner: {
-        Args: { check_user_id: string; target_round: number }
+      claim_winner_number: { Args: { target_round: number }; Returns: number }
+      current_open_round: { Args: never; Returns: number }
+      get_public_winners: {
+        Args: never
         Returns: {
-          is_winner: boolean
+          nickname_masked: string
           prize_satoshis: number
+          round_number: number
           winning_number: number
         }[]
       }
+      get_round_access: {
+        Args: { target_round: number }
+        Returns: {
+          allowed_number: number
+          can_view: boolean
+          early_access: boolean
+          open_round: number
+        }[]
+      }
+      get_sold_numbers: { Args: { target_round: number }; Returns: number[] }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_username_available: { Args: { uname: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -295,6 +339,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
