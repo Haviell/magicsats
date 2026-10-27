@@ -1952,7 +1952,7 @@ const AuthModal = ({
                 <span>
                   {authMode === 'login' && 'Entrar na Conta'}
                   {authMode === 'register' && 'Cadastrar e Participar'}
-                  {authMode === 'forgot' && 'Enviar Link via Resend'}
+                  {authMode === 'forgot' && 'Enviar Link de Recuperação'}
                 </span>
               )}
             </Button>
@@ -1972,7 +1972,6 @@ const AuthModal = ({
     </div>
   );
 };
-}
 
 // Substituir o RulesModal por um modal de regras em etapas/carrossel
 const rulesSteps = [
