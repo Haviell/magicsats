@@ -1706,14 +1706,11 @@ const AuthModal = ({
         if (!formData.email.trim() || !formData.email.includes('@')) {
           throw new Error('Informe um e-mail válido para recuperação.');
         }
-        // Chamada à API de recuperação via Resend
-        const res = await fetch('/api/emails/reset-password', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: formData.email.trim() }),
+        // Envia o link seguro de recuperação de senha
+        const { supabase } = await import('@/integrations/supabase/client');
+        await supabase.auth.resetPasswordForEmail(formData.email.trim().toLowerCase(), {
+          redirectTo: `${window.location.origin}/auth/redefinir-senha`,
         });
-        const resData = await res.json();
-        if (!res.ok) throw new Error(resData.error || 'Erro ao enviar e-mail.');
         setForgotSent(true);
       }
     } catch (err) {
