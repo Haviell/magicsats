@@ -1,5 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+function getTrustedOrigin(requestedOrigin: string) {
+  const request = getRequest();
+  const requestOrigin = new URL(request.url).origin;
+  const browserOrigin = request.headers.get("origin");
+  if (requestedOrigin !== requestOrigin || (browserOrigin && browserOrigin !== requestOrigin)) {
+    throw new Error("Origem inválida.");
+  }
+  return requestOrigin;
+}
 
 async function assertAdmin(supabase: any, userId: string) {
   const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
@@ -17,6 +28,7 @@ export const notifyRoundWinner = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
+    const origin = getTrustedOrigin(data.origin);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { sendWinnerEmail, isResendConfigured } = await import("@/lib/email/resend.server");
     if (!isResendConfigured()) return { sent: false, reason: "resend_not_configured" };
@@ -37,7 +49,7 @@ export const notifyRoundWinner = createServerFn({ method: "POST" })
       roundNumber: data.roundNumber,
       winningNumber: w.winning_number,
       prizeSatoshis: Number(w.prize_satoshis),
-      claimUrl: `${data.origin}/rifa?round=${data.roundNumber + 1}`,
+      claimUrl: `${origin}/rifa?round=${data.roundNumber + 1}`,
     });
     return { sent: result.success, reason: result.error };
   });
@@ -59,29 +71,108 @@ export const sendPromotionalCampaign = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
+    const origin = getTrustedOrigin(data.origin);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { sendPromotionalEmail, isResendConfigured } = await import("@/lib/email/resend.server");
     if (!isResendConfigured()) return { sent: 0, failed: 0, reason: "resend_not_configured" };
-    const { data: profiles } = await supabaseAdmin
+    const { data: profiles, error: profilesError } = await supabaseAdmin
       .from("profiles")
       .select("id, username")
       .eq("marketing_opt_in", true)
       .limit(500);
+    if (profilesError) throw new Error("Não foi possível carregar as preferências de e-mail.");
+
+    const { randomBytes, createHash } = await import("node:crypto");
     let sent = 0;
     let failed = 0;
     for (const p of profiles ?? []) {
       const { data: u } = await supabaseAdmin.auth.admin.getUserById(p.id);
-      if (!u?.user?.email) continue;
-      const r = await sendPromotionalEmail({
-        to: u.user.email,
-        nickname: p.username,
-        subject: data.subject,
-        bodyText: data.bodyText,
-        ctaUrl: data.ctaUrl,
-        ctaLabel: data.ctaLabel,
-        unsubscribeUrl: `${data.origin}/rifa?preferencias=email`,
-      });
-      r.success ? sent++ : failed++;
+      if (!u?.user?.email) {
+        failed++;
+        continue;
+      }
+
+      const token = randomBytes(32).toString("hex");
+      const tokenHash = createHash("sha256").update(token).digest("hex");
+      const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
+      const { error: tokenError } = await supabaseAdmin
+        .from("email_unsubscribe_tokens")
+        .insert({ token_hash: tokenHash, user_id: p.id, expires_at: expiresAt });
+      if (tokenError) {
+        failed++;
+        continue;
+      }
+
+      const unsubscribeUrl = `${origin}/rifa#unsubscribe=${token}`;
+      let delivered = false;
+      try {
+        const result = await sendPromotionalEmail({
+          to: u.user.email,
+          nickname: p.username,
+          subject: data.subject,
+          bodyText: data.bodyText,
+          ctaUrl: data.ctaUrl,
+          ctaLabel: data.ctaLabel,
+          unsubscribeUrl,
+        });
+        delivered = result.success;
+      } catch {
+        console.error("[emails] promotional delivery failed");
+      }
+
+      if (delivered) {
+        sent++;
+      } else {
+        failed++;
+        const { error: revokeError } = await supabaseAdmin
+          .from("email_unsubscribe_tokens")
+          .delete()
+          .eq("token_hash", tokenHash);
+        if (revokeError) {
+          throw new Error("Falha ao limpar o token de cancelamento de e-mail.");
+        }
+      }
     }
     return { sent, failed };
+  });
+
+/** Unsubscribe by a random, single-use token without disclosing account details. */
+export const unsubscribeFromMarketing = createServerFn({ method: "POST" })
+  .inputValidator((input: { token: string }) => {
+    const token = String(input?.token ?? "");
+    if (!/^[a-f0-9]{64}$/.test(token)) throw new Error("Link inválido.");
+    return { token };
+  })
+  .handler(async ({ data }) => {
+    const { createHash } = await import("node:crypto");
+    const tokenHash = createHash("sha256").update(data.token).digest("hex");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const now = new Date().toISOString();
+    const { data: savedToken, error: tokenError } = await supabaseAdmin
+      .from("email_unsubscribe_tokens")
+      .select("user_id")
+      .eq("token_hash", tokenHash)
+      .is("used_at", null)
+      .gt("expires_at", now)
+      .maybeSingle();
+
+    if (tokenError) throw new Error("Não foi possível atualizar sua preferência.");
+    if (!savedToken) {
+      return { success: true, message: "Se o link ainda estiver válido, a preferência será atualizada." };
+    }
+
+    const { error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .update({ marketing_opt_in: false })
+      .eq("id", savedToken.user_id);
+    if (profileError) throw new Error("Não foi possível atualizar sua preferência.");
+
+    const { error: revokeError } = await supabaseAdmin
+      .from("email_unsubscribe_tokens")
+      .update({ used_at: now })
+      .eq("user_id", savedToken.user_id)
+      .is("used_at", null);
+    if (revokeError) throw new Error("Preferência atualizada, mas não foi possível revogar os links.");
+
+    return { success: true, message: "Sua preferência de e-mails promocionais foi atualizada." };
   });

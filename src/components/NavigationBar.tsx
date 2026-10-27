@@ -2,22 +2,19 @@
 import { Share, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "./ui/button"
 import { usePathname, useRouter, useSearchParams } from '@/lib/next-compat'
+import { useRoundAccess } from '@/hooks/use-round-access'
+import { useToast } from '@/hooks/use-toast'
 
-interface NavigationBarProps {
-  onShareClick?: () => void
-  onNextRaffleUnavailable?: () => void
-  onNextClick?: () => void
-  canGoNext?: boolean
-}
-
-export default function NavigationBar({ onShareClick, onNextRaffleUnavailable, onNextClick, canGoNext = true }: NavigationBarProps) {
+export default function NavigationBar() {
   const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { openRound, nextRoundAccess, loading: accessLoading, getAccess } = useRoundAccess()
+  const { toast } = useToast()
 
   const getCurrentRound = () => {
     const roundParam = searchParams.get('round')
-    return roundParam ? parseInt(roundParam) : 1
+    return roundParam ? parseInt(roundParam) : (openRound ?? 1)
   }
 
   const getPageTitle = () => {
@@ -56,13 +53,27 @@ export default function NavigationBar({ onShareClick, onNextRaffleUnavailable, o
     }
   }
 
-  const handleNextRound = () => {
-    if (onNextClick) {
-      onNextClick()
-      return
-    }
+  const handleNextRound = async () => {
     const currentRound = getCurrentRound();
-    navigateToRound(currentRound + 1);
+    const targetRound = currentRound + 1
+    try {
+      const access = await getAccess(targetRound)
+      if (!access.canView) {
+        toast({
+          title: "Próxima rifa indisponível",
+          description: "A rodada atual ainda não terminou. O acesso antecipado é exclusivo do vencedor.",
+          variant: "destructive",
+        })
+        return
+      }
+      navigateToRound(targetRound)
+    } catch (error) {
+      toast({
+        title: "Não foi possível verificar o acesso",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      })
+    }
   }
 
   // Função para criar efeito ripple
@@ -116,6 +127,10 @@ export default function NavigationBar({ onShareClick, onNextRaffleUnavailable, o
 
   const currentRound = getCurrentRound()
   const isRifaPage = pathname === '/rifa'
+  const canGoNext =
+    openRound !== null &&
+    (currentRound < openRound ||
+      (currentRound === openRound && nextRoundAccess?.canView === true))
 
   return (
     <div className="w-[80vw] max-w-[380px] sm:w-[380px] absolute left-1/2 -translate-x-1/2 -top-2 z-10 mt-3 px-1 sm:px-0">
@@ -165,15 +180,20 @@ export default function NavigationBar({ onShareClick, onNextRaffleUnavailable, o
                 if (navigator.vibrate) {
                   navigator.vibrate(50)
                 }
-                handleNextRound()
+                void handleNextRound()
               }}
-              className="h-7 w-7 rounded-none border-r-[3px] border-black
+              disabled={accessLoading}
+              aria-disabled={!canGoNext}
+              title={canGoNext ? "Próxima rodada" : "A próxima rodada ainda não está liberada"}
+              className={`h-7 w-7 rounded-none border-r-[3px] border-black
                 bg-gradient-to-b from-gray-50 to-gray-100
                 hover:bg-gradient-to-b hover:from-gray-100 hover:to-gray-200
                 active:bg-gradient-to-b active:from-gray-200 active:to-gray-300
                 active:scale-95
+                disabled:opacity-50 disabled:cursor-not-allowed
+                ${!canGoNext ? 'opacity-50 cursor-not-allowed' : ''}
                 transition-all duration-150 ease-out
-                relative overflow-hidden"
+                relative overflow-hidden`}
             >
               <ChevronRight className="h-4 w-4 transition-transform duration-150 active:scale-90" />
             </Button>

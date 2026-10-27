@@ -28,22 +28,63 @@ import {
 } from "@/components/ui/tooltip"
 import { ListOrdered, Share2, Users, Bitcoin, ChevronLeft, ChevronRight, Factory, Shield, HelpCircle, Settings, BarChart2, X, Scale, Copy, RotateCcw, Lock, Hash, Fingerprint, Scroll, Timer, Trophy, LogIn, Lightbulb, Wallet, ArrowDown, ArrowUpRight, Check, AlertTriangle, Eye, EyeOff, Bell, BellOff, Moon, Sun, Globe, Smartphone, Filter, Search, QrCode, Mail, User, ArrowLeft, ArrowRight, Star, Info, Zap, ShieldCheck, Gift, Send, Key, CheckCircle2 } from "lucide-react"
 import { useRouter, useSearchParams } from '@/lib/next-compat'
-import QRCodeLib from 'qrcode'
 import { useToast } from '@/hooks/use-toast'
 import { initializeRoundZero } from '@/lib/raffle'
 import type { RaffleRound, RaffleNumber } from '@/types/raffle'
-import { useRaffle } from '@/context/raffle-context'
-import NavigationBar from '@/components/NavigationBar'
 import { useAuth } from '@/hooks/use-auth'
 import { useSupabaseData } from '@/hooks/use-supabase-data'
-import {
-  addUserTickets,
-  applyScheduledToNumbers,
-  awardWin,
-  getUserLuckyNumbers,
-  scheduleWinnerNumber,
-  type LuckyNumber,
-} from '@/lib/lucky-numbers'
+import { supabase } from '@/integrations/supabase/client'
+import { useRoundAccess, getRoundAccess } from '@/hooks/use-round-access'
+import { unsubscribeFromMarketing } from '@/lib/email.functions'
+import type { LuckyNumber } from '@/lib/lucky-numbers'
+
+async function loadRoundFromDatabase(roundNumber: number, allowPreview = false) {
+  const { data: raffle, error: raffleError } = await supabase
+    .from('raffles')
+    .select('id, round_number, total_prize, ticket_price, status, created_at')
+    .eq('round_number', roundNumber)
+    .maybeSingle()
+
+  if (raffleError) throw new Error('Não foi possível carregar os dados da rifa.')
+  if (!raffle && !allowPreview) throw new Error('Esta rodada ainda não foi criada.')
+
+  const [{ data: soldNumbers, error: soldError }, { data: winners, error: winnersError }] =
+    await Promise.all([
+      supabase.rpc('get_sold_numbers', { target_round: roundNumber }),
+      supabase.rpc('get_public_winners'),
+    ])
+  if (soldError || winnersError) throw new Error('Não foi possível carregar os números da rifa.')
+
+  const sold = new Set(soldNumbers ?? [])
+  const roundWinners = (winners ?? [])
+    .filter((winner) => winner.round_number === roundNumber)
+    .map((winner) => ({ name: winner.nickname_masked, address: '' }))
+  const isLegacy = roundNumber === 0
+  const legacyRound = isLegacy ? initializeRoundZero() : null
+  const totalPrize = raffle ? Number(raffle.total_prize) : 0.0008
+  const ticketPrice = raffle ? Number(raffle.ticket_price) : 0.00001
+
+  return {
+    ...(legacyRound ?? {}),
+    id: raffle ? String(raffle.id) : `round-${roundNumber}`,
+    roundNumber,
+    totalNumbers: 99,
+    prizePool: totalPrize,
+    ticketPrice,
+    drawDate: raffle ? new Date(raffle.created_at) : new Date(),
+    status: raffle?.status ?? 'upcoming',
+    isUpcoming: raffle?.status === 'upcoming' || !raffle,
+    numbers: Array.from({ length: 99 }, (_, index) => ({
+      number: index + 1,
+      status: sold.has(index + 1) ? 'sold' as const : 'available' as const,
+      purchasedAt: null,
+      purchasedBy: null,
+    })),
+    winners: roundWinners,
+    createdAt: raffle ? new Date(raffle.created_at) : new Date(),
+    updatedAt: raffle ? new Date(raffle.created_at) : new Date(),
+  }
+}
 
 // Mova os componentes de cards para dentro do arquivo
 const VisitorsCard = ({ visitors }: { visitors: { today: number; total: number } }) => (
@@ -176,10 +217,6 @@ const UserDashboard = ({
   userBalance = 0,
   inGameBalance = 0,
   availableToWithdraw = 0,
-  onDeposit,
-  onWithdraw,
-  onTip,
-  onSettings
 }: UserDashboardProps) => {
   const currentBalanceBRL = calculateBRLValue(userBalance);
   const userBalanceSats = Math.round(userBalance * 100000000);
@@ -250,7 +287,7 @@ const UserDashboard = ({
             <div className="flex justify-between items-center text-xs">
               <span className="text-gray-400 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                Em Jogo (Rifas Ativas)
+              Registrado em rifas
               </span>
               <span className="font-semibold text-blue-400 font-mono">
                 {inGameBalanceSats.toLocaleString('pt-BR')} SATS ({inGameBalance.toFixed(8)} BTC)
@@ -261,7 +298,7 @@ const UserDashboard = ({
             <div className="flex justify-between items-center text-xs">
               <span className="text-gray-400 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                Liberado para Saque
+                Saldo registrado
               </span>
               <span className="font-semibold text-emerald-400 font-mono">
                 {availableToWithdrawSats.toLocaleString('pt-BR')} SATS ({availableToWithdraw.toFixed(8)} BTC)
@@ -276,32 +313,35 @@ const UserDashboard = ({
         <div className="grid grid-cols-3 gap-2.5 relative z-10">
           <Button
             variant="outline"
-            className="bg-white/10 border border-white/20 text-white hover:bg-orange-500/20 hover:border-orange-500/40 text-xs py-5 rounded-xl transition-all font-bold shadow-md flex items-center gap-1.5"
-            onClick={onDeposit}
+            className="bg-white/10 border border-white/20 text-white/60 text-xs py-5 rounded-xl font-bold flex items-center gap-1.5"
+            disabled
+            title="Depósitos serão habilitados após a integração com o provedor de pagamentos."
           >
             <Zap className="w-4 h-4 text-orange-400" />
-            Depositar
+            Em breve
           </Button>
           <Button
             variant="outline"
-            className="bg-white/10 border border-white/20 text-white hover:bg-emerald-500/20 hover:border-emerald-500/40 text-xs py-5 rounded-xl transition-all font-bold shadow-md flex items-center gap-1.5"
-            onClick={onWithdraw}
+            className="bg-white/10 border border-white/20 text-white/60 text-xs py-5 rounded-xl font-bold flex items-center gap-1.5"
+            disabled
+            title="Saques serão habilitados após a integração com o provedor de pagamentos."
           >
             <ArrowUpRight className="w-4 h-4 text-emerald-400" />
-            Sacar
+            Em breve
           </Button>
           <Button
-            className="bg-gradient-to-r from-orange-500 to-amber-600 border-none text-white hover:from-orange-400 hover:to-amber-500 text-xs py-5 rounded-xl transition-all font-bold shadow-[0_0_15px_rgba(249,115,22,0.4)] flex items-center gap-1.5"
-            onClick={onTip}
+            className="bg-gradient-to-r from-orange-500/40 to-amber-600/40 border-none text-white/70 text-xs py-5 rounded-xl font-bold flex items-center gap-1.5"
+            disabled
+            title="Transferências entre usuários ainda não estão disponíveis."
           >
             <Send className="w-4 h-4 text-white" />
-            Gorjeta
+            Em breve
           </Button>
         </div>
       ) : (
         <div className="bg-gradient-to-r from-orange-500/10 to-amber-500/5 p-3.5 rounded-xl border border-orange-500/20 relative z-10 text-center">
           <p className="text-xs text-orange-200 font-medium">
-            🔒 Faça login para acessar sua carteira e saldos reais em Bitcoin.
+            🔒             Faça login para consultar os saldos registrados na sua conta.
           </p>
         </div>
       )}
@@ -324,43 +364,16 @@ const DepositModal = ({
   const [qrCodeDataURL, setQrCodeDataURL] = useState<string>('');
   const [isGeneratingQR, setIsGeneratingQR] = useState(false);
 
-  const bitcoinAddress = import.meta.env.VITE_BITCOIN_DEPOSIT_ADDRESS || 'bc1qmagicsatsanonwallet9247xzk';
+  const bitcoinAddress = import.meta.env.VITE_BITCOIN_DEPOSIT_ADDRESS || '';
 
-  // Gera o invoice da Lightning Network simulado/preparado para backend
   const activeSats = customSats ? Math.max(100, parseInt(customSats) || 0) : selectedSats;
-  const simulatedInvoice = `lnbc${activeSats * 10}n1p3magic${activeSats}satsanonpayment${Date.now()}`;
+  const simulatedInvoice = '';
 
   useEffect(() => {
     if (!isOpen) return;
-
-    let isMounted = true;
-    setIsGeneratingQR(true);
-
-    const payload = depositTab === 'lightning'
-      ? `lightning:${simulatedInvoice}`
-      : `bitcoin:${bitcoinAddress}`;
-
-    QRCodeLib.toDataURL(payload, {
-      width: 256,
-      margin: 2,
-      color: {
-        dark: '#000000',
-        light: '#FFFFFF'
-      },
-      errorCorrectionLevel: 'M'
-    }).then((url) => {
-      if (isMounted) {
-        setQrCodeDataURL(url);
-        setIsGeneratingQR(false);
-      }
-    }).catch(() => {
-      if (isMounted) setIsGeneratingQR(false);
-    });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [isOpen, depositTab, activeSats, bitcoinAddress, simulatedInvoice]);
+    setQrCodeDataURL('');
+    setIsGeneratingQR(false);
+  }, [isOpen]);
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -382,7 +395,7 @@ const DepositModal = ({
               </div>
               <div>
                 <h3 className="text-xl font-black text-gray-950">Depositar Bitcoin</h3>
-                <p className="text-xs text-gray-500 font-medium">Crédito rápido, anônimo e sem custódia</p>
+                <p className="text-xs text-gray-500 font-medium">Integração de pagamentos ainda não habilitada</p>
               </div>
             </div>
             <Button
@@ -505,7 +518,7 @@ const DepositModal = ({
                   )}
                 </div>
                 <span className="text-[11px] text-gray-500 font-medium mt-2">
-                  Envie qualquer quantia para o endereço acima
+                  Não envie Bitcoin: depósitos ainda não estão habilitados.
                 </span>
               </div>
 
@@ -531,7 +544,7 @@ const DepositModal = ({
 
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-[11px] text-amber-900 flex items-start gap-2">
                 <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-600" />
-                <span>Confirmação em 1 bloco na rede Bitcoin (~10 minutos). O saldo será atualizado automaticamente.</span>
+                <span>Não envie valores. Ainda não há monitoramento de pagamentos nem crédito automático.</span>
               </div>
             </div>
           )}
@@ -539,7 +552,7 @@ const DepositModal = ({
           {/* Garantia de Privacidade e Anonimato */}
           <div className="pt-2 border-t border-gray-100 flex items-center gap-2 text-[11px] text-gray-500">
             <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-            <span>🛡️ Depósito anônimo: seus dados de identidade não são vinculados à blockchain.</span>
+            <span>Os depósitos só serão ativados depois de existir um fluxo seguro de conciliação.</span>
           </div>
         </div>
       </div>
@@ -593,12 +606,7 @@ const WithdrawModal = ({
       alert('Valor solicitado excede o saldo disponível para saque.');
       return;
     }
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      alert('Solicitação de saque enviada com sucesso! O processamento ocorre em até 5 minutos.');
-      onClose();
-    }, 1000);
+    alert('Saques ainda não estão habilitados. Nenhuma solicitação foi enviada.');
   };
 
   if (!isOpen) return null;
@@ -779,8 +787,7 @@ const TipModal = ({
     setIsSending(true);
     setTimeout(() => {
       setIsSending(false);
-      alert(`⚡ Gorjeta de ${finalTipSats.toLocaleString('pt-BR')} sats enviada com sucesso para @${cleanNick}!`);
-      onClose();
+      alert('Transferências entre usuários ainda não estão habilitadas. Nenhuma gorjeta foi enviada.');
     }, 1000);
   };
 
@@ -1272,8 +1279,8 @@ const steps = [
   },
   {
     icon: "₿",
-    text: "Deposite Bitcoin",
-    detail: "Faça um depósito seguro em nossa carteira Bitcoin"
+    text: "Pagamentos em preparação",
+    detail: "Depósitos e saques só serão liberados após integração segura com um provedor"
   },
   {
     icon: "🎲",
@@ -1303,14 +1310,8 @@ const StatsCard = ({
   luckyNumbers: LuckyNumber[]
   nextRoundNumber: number
   onLogin: () => void
-  onSchedule: (number: number, targetRound: number) => void
+  onSchedule: (number: number) => void
 }) => {
-  const [targetRound, setTargetRound] = useState(nextRoundNumber)
-
-  useEffect(() => {
-    setTargetRound(nextRoundNumber)
-  }, [nextRoundNumber, isOpen])
-
   if (!isOpen) return null;
 
   return (
@@ -1362,7 +1363,7 @@ const StatsCard = ({
                     <span className="font-medium text-lg">Acesse seus Números da Sorte</span>
                       </div>
                   <p className="text-sm text-black/70 mb-4">
-                    Conquiste vitórias e desbloqueie prioridade exclusiva para reservar seus números favoritos em rifas futuras!
+                    Somente o vencedor da rodada atual pode acessar antecipadamente a próxima e reservar o mesmo número que ganhou.
                   </p>
                   <div className="flex items-center gap-2">
                       <Button
@@ -1394,21 +1395,13 @@ const StatsCard = ({
                         </div>
                   {luckyNumbers.length === 0 ? (
                     <div className="text-center text-black/60 text-sm py-6">
-                      Você ainda não conquistou nenhum Número da Sorte.<br />
-                      Participe das rifas e vença para desbloquear prioridade exclusiva!
+                      Você não venceu a rodada atual. Quando ela terminar, a próxima rodada será liberada para todos.
                       </div>
                   ) : (
                     <div className="grid grid-cols-1 gap-3">
-                      <label className="text-xs text-black/70">
-                        Agendar para a rodada
-                        <input
-                          type="number"
-                          min={nextRoundNumber}
-                          value={targetRound}
-                          onChange={(e) => setTargetRound(Math.max(nextRoundNumber, Number(e.target.value) || nextRoundNumber))}
-                          className="mt-1 w-full rounded-lg border-2 border-black px-3 py-2 text-sm"
-                        />
-                      </label>
+                      <p className="text-xs text-black/70">
+                        Reserva antecipada exclusiva da rodada #{nextRoundNumber}
+                      </p>
                       {luckyNumbers.map((item) => (
                         <div key={item.number} className="flex items-center justify-between bg-primary/5 p-3 rounded-lg border border-primary/20">
                           <div className="flex items-center gap-3">
@@ -1416,16 +1409,18 @@ const StatsCard = ({
                             <span className="text-lg font-bold">{String(item.number).padStart(2, '0')}</span>
                       </div>
                           <div className="flex flex-col items-end gap-1 text-xs">
-                            <span className="text-black/80 font-medium">Vitórias: {item.victories}</span>
-                            <span className="text-primary font-semibold">Reservas disponíveis: {item.reservationsLeft}</span>
-                            <Button
-                              size="sm"
-                              disabled={item.reservationsLeft < 1}
-                              className="h-7 text-xs"
-                              onClick={() => onSchedule(item.number, targetRound)}
-                            >
-                              Agendar
-                            </Button>
+                        <span className="text-black/80 font-medium">Número vencedor</span>
+                        <span className="text-primary font-semibold">
+                          {item.reservationsLeft > 0 ? "Reserva disponível" : "Já reservado"}
+                        </span>
+                        <Button
+                          size="sm"
+                          disabled={item.reservationsLeft < 1}
+                          className="h-7 text-xs"
+                          onClick={() => onSchedule(item.number)}
+                        >
+                          {item.reservationsLeft > 0 ? "Garantir meu número" : "Número garantido"}
+                        </Button>
                         </div>
                         </div>
                       ))}
@@ -1434,7 +1429,7 @@ const StatsCard = ({
                       </div>
                 <div className="bg-black/5 p-3 rounded-lg text-xs text-muted-foreground flex items-center gap-2 mt-2">
                   <Info className="w-4 h-4" />
-                  Quanto mais vitórias, mais reservas você pode garantir para seus números favoritos nas próximas rifas!
+                  A reserva é validada pelo servidor e só pode ser usada uma vez na próxima rodada.
                   </div>
                 </>
               )}
@@ -1663,7 +1658,12 @@ const AuthModal = ({
   onClose: () => void;
   onLoginSuccess: () => void;
   login: (emailOrNick: string, password: string) => Promise<unknown>;
-  register: (nickname: string, email: string, password: string) => Promise<unknown>;
+  register: (
+    nickname: string,
+    email: string,
+    password: string,
+    marketingOptIn?: boolean,
+  ) => Promise<{ user: unknown | null; needsConfirmation: boolean }>;
 }) => {
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot'>('login');
   const [formData, setFormData] = useState({
@@ -1671,11 +1671,13 @@ const AuthModal = ({
     emailOrNick: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    marketingOptIn: false,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
+  const [confirmationSent, setConfirmationSent] = useState(false);
 
   if (!isOpen) return null;
 
@@ -1700,17 +1702,28 @@ const AuthModal = ({
         if (formData.password !== formData.confirmPassword) {
           throw new Error('As senhas digitadas não coincidem.');
         }
-        await register(cleanNick, formData.email.trim(), formData.password);
-        onLoginSuccess();
-        onClose();
+        const result = await register(
+          cleanNick,
+          formData.email.trim(),
+          formData.password,
+          formData.marketingOptIn,
+        );
+        if (result.needsConfirmation) {
+          setConfirmationSent(true);
+        } else {
+          onLoginSuccess();
+          onClose();
+        }
       } else if (authMode === 'forgot') {
         if (!formData.email.trim() || !formData.email.includes('@')) {
           throw new Error('Informe um e-mail válido para recuperação.');
         }
-        // Envia o link seguro de recuperação de senha
-        const { supabase } = await import('@/integrations/supabase/client');
-        await supabase.auth.resetPasswordForEmail(formData.email.trim().toLowerCase(), {
-          redirectTo: `${window.location.origin}/auth/redefinir-senha`,
+        const { requestPasswordReset } = await import('@/lib/auth.functions');
+        await requestPasswordReset({
+          data: {
+            email: formData.email.trim().toLowerCase(),
+            origin: window.location.origin,
+          },
         });
         setForgotSent(true);
       }
@@ -1725,6 +1738,7 @@ const AuthModal = ({
     setAuthMode(mode);
     setError('');
     setForgotSent(false);
+    setConfirmationSent(false);
   };
 
   return (
@@ -1797,12 +1811,16 @@ const AuthModal = ({
             </div>
           )}
 
-          {forgotSent && (
+          {(forgotSent || confirmationSent) && (
             <div className="rounded-xl border-2 border-emerald-500 bg-emerald-50 p-4 text-xs font-bold text-emerald-900 text-center space-y-2">
               <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto" />
-              <p>E-mail de recuperação enviado com sucesso via Resend!</p>
+              <p>
+                {confirmationSent
+                  ? 'Se o cadastro foi concluído, enviaremos um link para confirmar seu e-mail.'
+                  : 'Se este e-mail estiver cadastrado, enviaremos instruções para redefinir sua senha.'}
+              </p>
               <p className="text-[11px] font-normal text-emerald-800">
-                Verifique sua caixa de entrada para redefinir sua senha.
+                Verifique sua caixa de entrada. O endereço de e-mail não é exibido publicamente.
               </p>
               <button
                 type="button"
@@ -1814,7 +1832,7 @@ const AuthModal = ({
             </div>
           )}
 
-          {!forgotSent && authMode === 'login' && (
+          {!forgotSent && !confirmationSent && authMode === 'login' && (
             <>
               <div>
                 <label className="text-xs font-bold text-gray-800 mb-1 block">E-mail ou Nickname</label>
@@ -1851,7 +1869,7 @@ const AuthModal = ({
             </>
           )}
 
-          {!forgotSent && authMode === 'register' && (
+          {!forgotSent && !confirmationSent && authMode === 'register' && (
             <>
               <div>
                 <div className="flex justify-between items-center mb-1">
@@ -1894,9 +1912,10 @@ const AuthModal = ({
                   <input
                     type="password"
                     required
+                    minLength={8}
                     value={formData.password}
                     onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                    placeholder="Mínimo 6 dígitos"
+                    placeholder="Mínimo 8 caracteres"
                     className="w-full bg-gray-50 rounded-xl px-3 py-2 text-xs font-medium border-2 border-black outline-none focus:bg-white"
                   />
                 </div>
@@ -1905,6 +1924,7 @@ const AuthModal = ({
                   <input
                     type="password"
                     required
+                    minLength={8}
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                     placeholder="Repita a senha"
@@ -1914,12 +1934,26 @@ const AuthModal = ({
               </div>
 
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 text-[10px] text-amber-900 font-medium">
-                🛡️ <strong>Zero Data Leak:</strong> Seu e-mail jamais será público. Apenas o seu <strong>@nickname</strong> é exibido.
+                <label className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.marketingOptIn}
+                    onChange={(e) => setFormData((prev) => ({
+                      ...prev,
+                      marketingOptIn: e.target.checked,
+                    }))}
+                    className="mt-0.5 accent-orange-500"
+                  />
+                  <span>Quero receber novidades e ofertas por e-mail. Posso cancelar quando quiser.</span>
+                </label>
+                <p className="mt-2">
+                  Seu e-mail fica privado; apenas o nickname escolhido pode aparecer publicamente.
+                </p>
               </div>
             </>
           )}
 
-          {!forgotSent && authMode === 'forgot' && (
+          {!forgotSent && !confirmationSent && authMode === 'forgot' && (
             <div className="space-y-3">
               <div>
                 <label className="text-xs font-bold text-gray-800 mb-1 block">E-mail da sua Conta</label>
@@ -1933,12 +1967,12 @@ const AuthModal = ({
                 />
               </div>
               <p className="text-[11px] text-gray-500">
-                Enviaremos um link direto e criptografado para o seu e-mail através da API do Resend para redefinir sua senha com segurança.
+                Se este e-mail estiver cadastrado, enviaremos instruções de recuperação pelo provedor configurado.
               </p>
             </div>
           )}
 
-          {!forgotSent && (
+          {!forgotSent && !confirmationSent && (
             <Button
               type="submit"
               disabled={isLoading}
@@ -2538,8 +2572,8 @@ const InfoModal = ({
                 <span className="text-white font-bold text-lg">₿</span>
               </div>
               <div>
-                <h2 className="text-xl font-bold">Meu Bitcoin</h2>
-                <p className="text-sm text-gray-500">Gerencia seus fundos</p>
+                <h2 className="text-xl font-bold">Minha carteira</h2>
+                <p className="text-sm text-gray-500">Consulta de saldos da conta</p>
               </div>
             </div>
             <Button
@@ -2615,25 +2649,20 @@ const InfoModal = ({
 };
 
 // No início do componente BitcoinRaffleImproved
-const CURRENT_ROUND_NUMBER = 1; // Ajuste para o round que está testando
-const ROUNDS_STORAGE_KEY = 'ms_raffle_rounds';
 const VISITOR_STORAGE_KEY = 'ms_visitor_stats';
 
 export function BitcoinRaffleImproved() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const roundAccess = useRoundAccess()
   const { user, isLoggedIn, login, register, logout } = useAuth()
   const { userProfile } = useSupabaseData()
   const userBalance = userProfile?.balance ?? 0
   const inGameBalance = userProfile?.in_game_balance ?? 0
   const availableToWithdraw = userBalance
-  const [luckyNumbers, setLuckyNumbers] = useState<LuckyNumber[]>([])
   const [currentFaqIndex, setCurrentFaqIndex] = useState(0)
-  const [selectedNumbersByRound, setSelectedNumbersByRound] = useState<{[key: string]: number[]}>({
-    'round-0': [],
-    'round-1': []
-  })
-  const [activeRoundId, setActiveRoundId] = useState(`round-${CURRENT_ROUND_NUMBER}`);
+  const [selectedNumbersByRound, setSelectedNumbersByRound] = useState<{[key: string]: number[]}>({})
+  const [activeRoundId, setActiveRoundId] = useState('round-1');
   const [rounds, setRounds] = useState<{[key: string]: any}>({})
   const [konamiCode, setKonamiCode] = useState<string[]>([])
   const [showEasterEgg, setShowEasterEgg] = useState(false)
@@ -2656,113 +2685,101 @@ export function BitcoinRaffleImproved() {
   const [showInfo, setShowInfo] = useState(false)
   const [isMainMenuOpen, setIsMainMenuOpen] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
-  // Adicionar estado para modal de aviso da próxima rifa
-  const [showNextRaffleModal, setShowNextRaffleModal] = useState(false);
-  // Adicionar estado para guardar o round anterior
-  const [previousRoundId, setPreviousRoundId] = useState(activeRoundId);
+  const [roundDataError, setRoundDataError] = useState<string | null>(null)
+  const [unsubscribeToken, setUnsubscribeToken] = useState('')
+  const [unsubscribeLoading, setUnsubscribeLoading] = useState(false)
+  const [unsubscribeMessage, setUnsubscribeMessage] = useState('')
+  const openRoundNumber = roundAccess.openRound ?? 1
 
   useEffect(() => {
-    setLuckyNumbers(user ? getUserLuckyNumbers(user.id) : [])
-  }, [user])
+    if (roundAccess.loading || roundAccess.openRound === null) return
+
+    let active = true
+    const requestedValue = searchParams.get('round')
+    const requestedRound =
+      requestedValue === null
+        ? openRoundNumber
+        : /^\d+$/.test(requestedValue)
+          ? Number(requestedValue)
+          : -1
+
+    setIsLoading(true)
+    setRoundDataError(null)
+    void (async () => {
+      try {
+        let targetRound = requestedRound
+        let access = await getRoundAccess(targetRound)
+        if (!access.canView) {
+          targetRound = openRoundNumber
+          access = await getRoundAccess(targetRound)
+          if (active) {
+            toast({
+              title: "Rifa ainda não disponível",
+              description: "A rodada atual precisa terminar. Somente seu vencedor pode acessar a próxima antecipadamente.",
+              variant: "destructive",
+            })
+            router.replace(`/rifa?round=${openRoundNumber}`)
+          }
+        }
+
+        const roundsToLoad = [...new Set([openRoundNumber, targetRound])]
+        const loadedRounds = await Promise.all(
+          roundsToLoad.map((roundNumber) =>
+            loadRoundFromDatabase(roundNumber, roundNumber === targetRound && access.earlyAccess),
+          ),
+        )
+        if (!active) return
+
+        setRounds((previous) => ({
+          ...previous,
+          ...Object.fromEntries(
+            loadedRounds.map((round) => [`round-${round.roundNumber}`, round]),
+          ),
+        }))
+        setActiveRoundId(`round-${targetRound}`)
+        setSelectedNumbersByRound((previous) => ({
+          ...previous,
+          [`round-${targetRound}`]: previous[`round-${targetRound}`] ?? [],
+        }))
+      } catch (error) {
+        if (!active) return
+        const message = error instanceof Error ? error.message : "Não foi possível carregar a rifa."
+        setRoundDataError(message)
+      } finally {
+        if (active) setIsLoading(false)
+      }
+    })()
+
+    return () => {
+      active = false
+    }
+  }, [roundAccess.loading, roundAccess.openRound, openRoundNumber, searchParams, user?.id, router, toast])
 
   useEffect(() => {
-    // Limpeza de resquícios de mockup/cache local no navegador
-    try {
-      localStorage.removeItem(ROUNDS_STORAGE_KEY)
-      localStorage.removeItem('ms_accounts')
-      localStorage.removeItem('ms_session')
-    } catch {
-      // ignore
-    }
-
-    const round0 = {
-      ...initializeRoundZero(),
-      roundNumber: 0
-    }
-    const round1 = {
-      id: 'round-1',
-      roundNumber: 1,
-      totalNumbers: 99,
-      prizePool: 0.00080000, // 80.000 sats - prêmio único
-      ticketPrice: 0.00001000, // 1.000 sats por número
-      drawDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 dias
-      status: 'active' as const,
-      numbers: Array.from({ length: 99 }, (_, i) => ({
-        number: i + 1,
-        status: 'available' as const,
-        purchasedAt: null,
-        purchasedBy: null
-      })),
-      winners: [],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }
-
-    setRounds({
-      'round-0': round0,
-      'round-1': round1
-    })
-    setIsLoading(false)
+    const match = window.location.hash.match(/^#unsubscribe=([a-f0-9]{64})$/)
+    if (!match) return
+    setUnsubscribeToken(match[1])
+    window.history.replaceState(
+      window.history.state,
+      '',
+      `${window.location.pathname}${window.location.search}`,
+    )
   }, [])
 
-  // Função para criar um novo round
-  const createRound = (roundNumber: number) => {
-    // ⚠️ ROUND #0 - ARQUIVO HISTÓRICO - NÃO ALTERAR! ⚠️
-    // Mantém configuração original para preservar credibilidade social
-    if (roundNumber === 0) {
-      return {
-        ...initializeRoundZero(),
-        roundNumber: 0  // Força como número para garantir comparação correta
-      }
+  const confirmUnsubscribe = async () => {
+    if (!unsubscribeToken) return
+    setUnsubscribeLoading(true)
+    setUnsubscribeMessage('')
+    try {
+      const result = await unsubscribeFromMarketing({ data: { token: unsubscribeToken } })
+      setUnsubscribeMessage(result.message)
+      setUnsubscribeToken('')
+    } catch {
+      setUnsubscribeMessage('Não foi possível atualizar a preferência. Tente novamente mais tarde.')
+    } finally {
+      setUnsubscribeLoading(false)
     }
-
-    // Round #1+ usa nova configuração (template global)
-    const round = {
-      id: `round-${roundNumber}`,
-      roundNumber: roundNumber,
-      totalNumbers: 99,
-      prizePool: 0.00080000, // 80.000 sats - prêmio único
-      ticketPrice: 0.00001000, // 1.000 sats por número
-      drawDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 dias
-      status: 'active' as const,
-      numbers: applyScheduledToNumbers(roundNumber, Array.from({ length: 99 }, (_, i) => ({
-        number: i + 1,
-        status: 'available' as const,
-        purchasedAt: null,
-        purchasedBy: null,
-        legacyPurchase: null
-      }))),
-      winners: [],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }
-    return round
   }
-
-  // Sincronizar com query parameters e criar rounds dinamicamente
-  useEffect(() => {
-    const roundParam = searchParams.get('round')
-    if (roundParam) {
-      const roundNumber = parseInt(roundParam)
-      const roundId = `round-${roundNumber}`
-
-      // Criar round se não existir
-      if (!rounds[roundId] && roundNumber >= 0) {
-        setRounds(prev => ({
-          ...prev,
-          [roundId]: createRound(roundNumber)
-        }))
-
-        // Inicializar seleção para o novo round
-        setSelectedNumbersByRound(prev => ({
-          ...prev,
-          [roundId]: []
-        }))
-      }
-
-      setActiveRoundId(roundId)
-    }
-  }, [searchParams, rounds])
 
   useEffect(() => {
     setRandomInfo(magicSatsInfo[Math.floor(Math.random() * magicSatsInfo.length)])
@@ -2865,7 +2882,7 @@ export function BitcoinRaffleImproved() {
 
   const toggleNumber = (number: number) => {
     const currentRound = rounds[activeRoundId]
-    if (!currentRound) return
+    if (!currentRound || currentRound.roundNumber !== openRoundNumber || currentRound.status !== 'active') return
 
     const raffleNumber = currentRound.numbers.find((n: RaffleNumber) => n.number === number)
     if (!raffleNumber || raffleNumber.status !== 'available') return
@@ -2895,8 +2912,20 @@ export function BitcoinRaffleImproved() {
       return
     }
 
-    // Processar compra para usuário logado
     const currentRound = rounds[activeRoundId]
+    if (
+      !currentRound ||
+      currentRound.roundNumber !== openRoundNumber ||
+      currentRound.status !== 'active'
+    ) {
+      toast({
+        title: "Rifa indisponível",
+        description: "Os números só podem ser solicitados na rodada ativa.",
+        variant: "destructive",
+      })
+      return
+    }
+
     const roundNumber = currentRound?.roundNumber || 0
     const ticketPrice = currentRound?.ticketPrice || 0.00001000
     const totalValue = selectedNumbers.length * ticketPrice
@@ -2908,46 +2937,82 @@ Total: ${selectedNumbers.length} números
 Valor: ${totalValue.toFixed(8)} BTC (${(totalValue * 100000000).toFixed(0)} sats)`
 
     const whatsappUrl = `https://wa.me/${phoneNumber.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
-    window.open(whatsappUrl, '_blank')
+    const whatsappWindow = window.open(whatsappUrl, '_blank')
+    if (!whatsappWindow) {
+      toast({
+        title: "Não foi possível abrir o WhatsApp",
+        description: "Permita pop-ups para continuar. Os números ainda não foram reservados.",
+        variant: "destructive",
+      })
+      return
+    }
 
     setSelectedNumbersByRound(prev => ({
       ...prev,
       [activeRoundId]: []
     }))
+    toast({
+      title: "Pedido aberto no WhatsApp",
+      description: "Os números só serão confirmados após validação; ainda não estão reservados.",
+    })
   }
 
   const handleLoginSuccess = () => {
-    // Limpar números selecionados para evitar conflitos
-    setSelectedNumbersByRound({
-      'round-0': [],
-      'round-1': []
-    })
-    // Usuário pode selecionar números novamente após login
+    setSelectedNumbersByRound({})
   }
 
-  const handleScheduleLuckyNumber = (number: number, targetRound: number) => {
+  const handleScheduleLuckyNumber = async (number: number) => {
     if (!user) {
       setShowAuthModal(true)
       return
     }
+
+    const targetRound = openRoundNumber + 1
+    if (
+      !roundAccess.nextRoundAccess?.earlyAccess ||
+      roundAccess.nextRoundAccess.allowedNumber !== number
+    ) {
+      toast({
+        title: "Reserva não autorizada",
+        description: "Somente o vencedor da rodada atual pode reservar o mesmo número na próxima.",
+        variant: "destructive",
+      })
+      return
+    }
+
     try {
-      scheduleWinnerNumber({ userId: user.id, userName: user.name, number, targetRound })
-      setLuckyNumbers(getUserLuckyNumbers(user.id))
+      const { data: claimedNumber, error } = await supabase.rpc('claim_winner_number', {
+        target_round: targetRound,
+      })
+      if (error || claimedNumber !== number) {
+        throw new Error("Não foi possível confirmar a reserva. Atualize a página e tente novamente.")
+      }
+
+      const { data: soldNumbers, error: soldError } = await supabase.rpc('get_sold_numbers', {
+        target_round: targetRound,
+      })
+      if (soldError) throw new Error("A reserva foi feita, mas não foi possível atualizar a lista de números.")
+
       setRounds((previous) => {
         const target = previous[`round-${targetRound}`]
         if (!target) return previous
+        const sold = new Set(soldNumbers ?? [])
         return {
           ...previous,
           [`round-${targetRound}`]: {
             ...target,
-            numbers: applyScheduledToNumbers(targetRound, target.numbers),
+            numbers: target.numbers.map((raffleNumber: RaffleNumber) => ({
+              ...raffleNumber,
+              status: sold.has(raffleNumber.number) ? 'sold' : raffleNumber.status,
+            })),
           },
         }
       })
-      toast({ title: 'Número agendado', description: `O número ${number} foi reservado para a rodada #${targetRound}.` })
+      await roundAccess.refresh()
+      toast({ title: 'Número reservado', description: `O número ${number} foi garantido na rodada #${targetRound}.` })
     } catch (error) {
       toast({
-        title: 'Não foi possível agendar',
+        title: 'Não foi possível reservar o número',
         description: error instanceof Error ? error.message : 'Tente novamente.',
         variant: 'destructive',
       })
@@ -3082,7 +3147,26 @@ Valor: ${totalValue.toFixed(8)} BTC (${(totalValue * 100000000).toFixed(0)} sats
     )
   }
 
-  if (isLoading || Object.keys(rounds).length === 0) {
+  if (roundDataError || roundAccess.error) {
+    return (
+      <div className="mx-auto my-12 max-w-lg rounded-2xl border-4 border-black bg-white p-6 text-center shadow-[6px_8px_0px_0px_rgba(0,0,0,1)]">
+        <Shield className="mx-auto mb-3 h-8 w-8 text-orange-500" />
+        <h2 className="text-xl font-black">Rifa temporariamente indisponível</h2>
+        <p className="mt-2 text-sm text-gray-600">{roundDataError ?? roundAccess.error}</p>
+        <Button
+          className="mt-4"
+          onClick={() => {
+            setRoundDataError(null)
+            void roundAccess.refresh().catch(() => undefined)
+          }}
+        >
+          Tentar novamente
+        </Button>
+      </div>
+    )
+  }
+
+  if (isLoading || roundAccess.openRound === null || Object.keys(rounds).length === 0) {
     return (
       <div className="flex justify-center my-4">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -3091,58 +3175,30 @@ Valor: ${totalValue.toFixed(8)} BTC (${(totalValue * 100000000).toFixed(0)} sats
   }
 
   const currentRound = rounds[activeRoundId]
+  if (!currentRound) {
+    return <p className="py-12 text-center text-sm text-gray-600">Não foi possível carregar esta rodada.</p>
+  }
   const selectedNumbers = selectedNumbersByRound[activeRoundId] || []
+  const isNextRaffle = currentRound.roundNumber === openRoundNumber + 1
+  const winningNumber = roundAccess.nextRoundAccess?.earlyAccess
+    ? roundAccess.nextRoundAccess.allowedNumber
+    : null
+  const luckyNumbers: LuckyNumber[] =
+    winningNumber === null || winningNumber === undefined
+      ? []
+      : [{
+          number: winningNumber,
+          victories: 1,
+          reservationsLeft: roundAccess.nextRoundAccess?.numberClaimed ? 0 : 1,
+        }]
 
   // Calcula estatísticas
   const totalSold = currentRound.numbers.filter((n: RaffleNumber) => n.status === 'sold').length
   const totalNumbers = currentRound.totalNumbers
   const percentageSold = ((totalSold / totalNumbers) * 100).toFixed(1)
 
-  // Modificar navegação dos rounds
-  const handlePreviousRound = () => {
-    // Permite voltar para o round 0
-    const currentNumber = typeof currentRound.roundNumber === 'number' ? currentRound.roundNumber : 0;
-    if (currentNumber > 0) {
-      setActiveRoundId(`round-${currentNumber - 1}`);
-    }
-  };
-  const handleNextRound = () => {
-    // Só permite ir para o próximo round (atual + 1)
-    setActiveRoundId(`round-${CURRENT_ROUND_NUMBER + 1}`);
-    setShowNextRaffleModal(true);
-  };
-
-  // No render, desabilitar interações se estiver no próximo round
-  const isNextRaffle = activeRoundId === `round-${CURRENT_ROUND_NUMBER + 1}`;
-
   return (
     <>
-      {/* Remover a prop onMenuClick */}
-      <NavigationBar onNextRaffleUnavailable={() => {
-        setPreviousRoundId(activeRoundId);
-        const nextRoundId = `round-${CURRENT_ROUND_NUMBER + 1}`;
-        // Se o round ainda não existe, cria um placeholder visual
-        if (!rounds[nextRoundId]) {
-          setRounds(prev => ({
-            ...prev,
-            [nextRoundId]: {
-              ...prev[activeRoundId],
-              roundNumber: CURRENT_ROUND_NUMBER + 1,
-              id: nextRoundId,
-              status: 'active', // usar 'active' para garantir compatibilidade visual
-              numbers: prev[activeRoundId].numbers.map((n: RaffleNumber) => ({ ...n, status: 'available' as const, purchasedBy: undefined })),
-              winners: [],
-              createdAt: new Date(),
-              updatedAt: new Date()
-            }
-          }));
-        }
-        setActiveRoundId(nextRoundId);
-        setTimeout(() => {
-          setShowNextRaffleModal(true);
-        }, 50); // pequeno delay para garantir renderização
-      }} />
-
       <Card className="w-full max-w-3xl mx-auto font-montserrat relative
         bg-white/95
         border-[4px] border-black
@@ -3168,10 +3224,32 @@ Valor: ${totalValue.toFixed(8)} BTC (${(totalValue * 100000000).toFixed(0)} sats
                 {currentRound.roundNumber === 0 && (
                   <span className="text-[11px] font-semibold tracking-wide px-2 py-[2px] rounded-md border border-[#e6c98f] bg-[#f9f6ee] text-[#a88c3b] shadow-none uppercase" style={{letterSpacing: '0.04em', lineHeight: '1.1'}}>Arquivo</span>
                 )}
-                {currentRound.roundNumber >= 1 && (
+                {currentRound.isUpcoming && (
+                  <span className="rounded-md border border-amber-300 bg-amber-50 px-2 py-[2px] text-[10px] font-bold uppercase text-amber-800">
+                    Prévia exclusiva
+                  </span>
+                )}
+                {!currentRound.isUpcoming && currentRound.status === 'active' && (
                   <span className="inline-block align-middle w-2 h-2 rounded-full bg-green-500" />
                 )}
               </div>
+              {isNextRaffle && roundAccess.nextRoundAccess?.earlyAccess && winningNumber !== null && (
+                <div className="mx-auto mt-3 max-w-md rounded-xl border-2 border-amber-400 bg-amber-50 p-3 text-left">
+                  <p className="text-sm font-bold text-amber-950">
+                    Acesso antecipado: você venceu a rodada #{openRoundNumber}.
+                  </p>
+                  <p className="mt-1 text-xs text-amber-900">
+                    Seu número vencedor {winningNumber} pode ser reservado uma vez para esta rodada.
+                  </p>
+                  <Button
+                    className="mt-3 w-full"
+                    disabled={roundAccess.nextRoundAccess.numberClaimed}
+                    onClick={() => void handleScheduleLuckyNumber(winningNumber)}
+                  >
+                    {roundAccess.nextRoundAccess.numberClaimed ? "Número já reservado" : "Reservar meu número vencedor"}
+                  </Button>
+                </div>
+              )}
               {/* Último Vencedor - discreto */}
               <div className="mt-1 flex items-center justify-center gap-1 text-xs text-muted-foreground font-normal">
                 <span>Último Vencedor:</span>
@@ -3209,9 +3287,13 @@ Valor: ${totalValue.toFixed(8)} BTC (${(totalValue * 100000000).toFixed(0)} sats
               ) : (
                 // Round #1+ - Nova configuração (template global)
                 <>
-                  <p className="text-lg">🏆 0.00080000 BTC</p>
-                  <p className="text-sm text-muted-foreground">(Oitenta mil Satoshis)</p>
-                  <p className="text-xs text-muted-foreground mt-2">Números a 0.00001000 BTC cada</p>
+                  <p className="text-lg">🏆 {Number(currentRound.prizePool).toFixed(8)} BTC</p>
+                  <p className="text-sm text-muted-foreground">
+                    ({Math.round(Number(currentRound.prizePool) * 100000000).toLocaleString('pt-BR')} satoshis)
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Números a {Number(currentRound.ticketPrice).toFixed(8)} BTC cada
+                  </p>
                 </>
               )}
             </div>
@@ -3400,7 +3482,7 @@ Valor: ${totalValue.toFixed(8)} BTC (${(totalValue * 100000000).toFixed(0)} sats
 
             <div className="mt-6 flex justify-center">
               <Button
-                aria-label="Comprar números selecionados"
+                aria-label="Solicitar números selecionados pelo WhatsApp"
                 role="button"
                 className="h-14 px-8 font-medium border-[4px] transition-all duration-200
                   bg-gradient-to-b from-green-500 to-green-600
@@ -3415,7 +3497,11 @@ Valor: ${totalValue.toFixed(8)} BTC (${(totalValue * 100000000).toFixed(0)} sats
                   text-white text-lg
                   group"
                 onClick={handleWhatsAppRedirect}
-                disabled={activeRoundId !== `round-${CURRENT_ROUND_NUMBER}` || selectedNumbers.length === 0}
+                disabled={
+                  currentRound.roundNumber !== openRoundNumber ||
+                  currentRound.status !== 'active' ||
+                  selectedNumbers.length === 0
+                }
               >
                 <span className="relative z-10">
                   {selectedNumbers.length === 0 ? (
@@ -3469,7 +3555,7 @@ Valor: ${totalValue.toFixed(8)} BTC (${(totalValue * 100000000).toFixed(0)} sats
         onClose={() => setShowStats(false)}
         isLoggedIn={isLoggedIn}
         luckyNumbers={luckyNumbers}
-        nextRoundNumber={currentRound.roundNumber === 'zero' ? 1 : currentRound.roundNumber + 1}
+        nextRoundNumber={openRoundNumber + 1}
         onLogin={() => setShowAuthModal(true)}
         onSchedule={handleScheduleLuckyNumber}
       />
@@ -3517,20 +3603,41 @@ Valor: ${totalValue.toFixed(8)} BTC (${(totalValue * 100000000).toFixed(0)} sats
         register={register}
       />
 
-      {/* Modal de aviso para próxima rifa */}
-      {showNextRaffleModal && isNextRaffle && (
-        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center">
-          <div className="bg-white rounded-xl p-6 max-w-xs text-center shadow-2xl border-2 border-black">
-            <h2 className="text-lg font-bold mb-2">Rifa Indisponível</h2>
-            <p className="text-sm mb-4">Esta rifa ainda não está disponível. Aguarde o início para participar.</p>
-            <Button onClick={() => { setShowNextRaffleModal(false); setActiveRoundId(previousRoundId); }}>
-              Voltar para rifa atual
+      {(unsubscribeToken || unsubscribeMessage) && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-sm rounded-2xl border-4 border-black bg-white p-6 text-center shadow-[8px_10px_0px_0px_rgba(0,0,0,1)]">
+            <ShieldCheck className="mx-auto mb-3 h-9 w-9 text-emerald-600" />
+            <h2 className="text-lg font-black">Preferências de e-mail</h2>
+            {unsubscribeMessage ? (
+              <p className="mt-3 text-sm text-gray-700">{unsubscribeMessage}</p>
+            ) : (
+              <>
+                <p className="mt-3 text-sm text-gray-700">
+                  Deseja cancelar o recebimento de e-mails promocionais?
+                </p>
+                <Button
+                  className="mt-4 w-full"
+                  disabled={unsubscribeLoading}
+                  onClick={() => void confirmUnsubscribe()}
+                >
+                  {unsubscribeLoading ? "Atualizando..." : "Cancelar e-mails promocionais"}
+                </Button>
+              </>
+            )}
+            <Button
+              variant="ghost"
+              className="mt-2 w-full"
+              onClick={() => {
+                setUnsubscribeToken('')
+                setUnsubscribeMessage('')
+              }}
+            >
+              Fechar
             </Button>
           </div>
         </div>
       )}
+
     </>
   )
 }
-
-

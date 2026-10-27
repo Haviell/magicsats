@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/integrations/supabase/client'
-import { loginWithIdentifier } from '@/lib/auth.functions'
+import { loginWithIdentifier, registerWithIdentifier } from '@/lib/auth.functions'
 
 export type AuthUser = {
   id: string
@@ -49,29 +49,28 @@ export function useAuth() {
   }, [])
 
   /** Cadastro por Nickname, E-mail e Senha. */
-  const register = useCallback(async (nickname: string, email: string, password: string) => {
-    const cleanNick = nickname.trim().replace(/^@/, '')
-    const cleanEmail = email.trim().toLowerCase()
-    if (!/^[a-zA-Z0-9_.]{3,20}$/.test(cleanNick)) {
-      throw new Error('O nickname deve ter de 3 a 20 caracteres (letras, números, _ ou .).')
-    }
-    if (!cleanEmail.includes('@')) throw new Error('Informe um e-mail válido.')
-    if (password.length < 8) throw new Error('A senha deve ter no mínimo 8 caracteres.')
-
-    const { data: available } = await supabase.rpc('is_username_available', { uname: cleanNick })
-    if (available === false) throw new Error('Este nickname já está em uso. Por favor, escolha outro.')
-
-    const { data, error } = await supabase.auth.signUp({
-      email: cleanEmail,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/rifa`,
-        data: { username: cleanNick },
+  const register = useCallback(async (
+    nickname: string,
+    email: string,
+    password: string,
+    marketingOptIn = false,
+  ) => {
+    const result = await registerWithIdentifier({
+      data: {
+        nickname,
+        email,
+        password,
+        marketingOptIn,
+        origin: window.location.origin,
       },
     })
-    if (error) throw new Error(error.message.includes('registered') ? 'Não foi possível criar a conta com esses dados.' : error.message)
 
-    if (data.session && data.user) {
+    if (result.access_token && result.refresh_token) {
+      const { data, error } = await supabase.auth.setSession({
+        access_token: result.access_token,
+        refresh_token: result.refresh_token,
+      })
+      if (error || !data.user) throw new Error('Não foi possível iniciar sua sessão.');
       const sessionUser = await toAuthUser(data.user)
       setUser(sessionUser)
       return { user: sessionUser, needsConfirmation: false }

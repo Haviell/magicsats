@@ -44,8 +44,7 @@ export function useSupabaseData() {
             username:
               (user.user_metadata?.username as string) ||
               (user.user_metadata?.name as string) ||
-              user.email?.split('@')[0] ||
-              'Usuário',
+              'Anon',
             balance: 0,
             in_game_balance: 0,
             created_at: user.created_at,

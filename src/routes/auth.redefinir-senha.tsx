@@ -25,7 +25,7 @@ function ResetPassword() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (password.length < 6) return setError("A senha deve ter no mínimo 6 caracteres.");
+    if (password.length < 8) return setError("A senha deve ter no mínimo 8 caracteres.");
     if (password !== confirm) return setError("As senhas digitadas não coincidem.");
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password });
@@ -44,6 +44,8 @@ function ResetPassword() {
         <input
           type="password"
           placeholder="Nova senha"
+          minLength={8}
+          required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="w-full rounded-md border-2 border-black px-3 py-2"
@@ -51,6 +53,8 @@ function ResetPassword() {
         <input
           type="password"
           placeholder="Confirmar senha"
+          minLength={8}
+          required
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
           className="w-full rounded-md border-2 border-black px-3 py-2"

@@ -44,8 +44,7 @@ async function send(to: string, subject: string, html: string, headers?: Record<
     body: JSON.stringify({ from, to: [to], subject, html, headers }),
   });
   if (!res.ok) {
-    const body = await res.text();
-    console.error(`[resend] falha ${res.status} para ${maskEmail(to)}: ${body}`);
+    console.error(`[resend] falha ${res.status} para ${maskEmail(to)}`);
     return { success: false, error: `resend_${res.status}` };
   }
   return { success: true };

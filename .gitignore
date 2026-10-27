@@ -15,6 +15,24 @@ dist-ssr
 .tanstack/**
 .nitro
 *.local
+.env
+.env*.local
+*.pem
+
+# Local build artifacts
+/.next/
+/out/
+/build
+/.vercel
+*.tsbuildinfo
+next-env.d.ts
+.node-portable/
+
+# macOS metadata
+._*
+
+# Local project-generator metadata
+.lovable/
 
 # Wrangler / Cloudflare
 .wrangler/

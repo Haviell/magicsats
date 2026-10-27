@@ -1,8 +1,0 @@
-[
- {"capability":"code/pages","source":"Next.js app","outcome":"migrate","status":"verified","next_action":"none"},
- {"capability":"schema","source":"supabase/migrations","outcome":"migrate","status":"verified","next_action":"none"},
- {"capability":"records","source":"original database","outcome":"migrate","status":"pending","next_action":"user exports profiles/tickets/raffles CSV"},
- {"capability":"auth users","source":"original auth","outcome":"migrate","status":"pending","next_action":"user exports user list"},
- {"capability":"password reset email","source":"Resend","outcome":"replaced by Cloud auth email","status":"implemented","next_action":"none"},
- {"capability":"winner/promotional emails","source":"Resend API routes (unused by UI, unauthenticated)","outcome":"not ported","status":"pending","next_action":"rebuild as admin-only feature if needed"}
-]
