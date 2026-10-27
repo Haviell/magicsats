@@ -9,50 +9,180 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as ContatoRouteImport } from './routes/contato'
+import { Route as FaqRouteImport } from './routes/faq'
+import { Route as LgpdRouteImport } from './routes/lgpd'
+import { Route as PrivacidadeRouteImport } from './routes/privacidade'
+import { Route as SobreRouteImport } from './routes/sobre'
+import { Route as TermosRouteImport } from './routes/termos'
+import { Route as TransparenciaRouteImport } from './routes/transparencia'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const ContatoRoute = ContatoRouteImport.update({
+  id: '/contato',
+  path: '/contato',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LgpdRoute = LgpdRouteImport.update({
+  id: '/lgpd',
+  path: '/lgpd',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacidadeRoute = PrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SobreRoute = SobreRouteImport.update({
+  id: '/sobre',
+  path: '/sobre',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermosRoute = TermosRouteImport.update({
+  id: '/termos',
+  path: '/termos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TransparenciaRoute = TransparenciaRouteImport.update({
+  id: '/transparencia',
+  path: '/transparencia',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/contato': typeof ContatoRoute
+  '/faq': typeof FaqRoute
+  '/lgpd': typeof LgpdRoute
+  '/privacidade': typeof PrivacidadeRoute
+  '/sobre': typeof SobreRoute
+  '/termos': typeof TermosRoute
+  '/transparencia': typeof TransparenciaRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/contato': typeof ContatoRoute
+  '/faq': typeof FaqRoute
+  '/lgpd': typeof LgpdRoute
+  '/privacidade': typeof PrivacidadeRoute
+  '/sobre': typeof SobreRoute
+  '/termos': typeof TermosRoute
+  '/transparencia': typeof TransparenciaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/contato': typeof ContatoRoute
+  '/faq': typeof FaqRoute
+  '/lgpd': typeof LgpdRoute
+  '/privacidade': typeof PrivacidadeRoute
+  '/sobre': typeof SobreRoute
+  '/termos': typeof TermosRoute
+  '/transparencia': typeof TransparenciaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/contato'
+    | '/faq'
+    | '/lgpd'
+    | '/privacidade'
+    | '/sobre'
+    | '/termos'
+    | '/transparencia'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/contato'
+    | '/faq'
+    | '/lgpd'
+    | '/privacidade'
+    | '/sobre'
+    | '/termos'
+    | '/transparencia'
+  id:
+    | '__root__'
+    | '/contato'
+    | '/faq'
+    | '/lgpd'
+    | '/privacidade'
+    | '/sobre'
+    | '/termos'
+    | '/transparencia'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  ContatoRoute: typeof ContatoRoute
+  FaqRoute: typeof FaqRoute
+  LgpdRoute: typeof LgpdRoute
+  PrivacidadeRoute: typeof PrivacidadeRoute
+  SobreRoute: typeof SobreRoute
+  TermosRoute: typeof TermosRoute
+  TransparenciaRoute: typeof TransparenciaRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/contato': {
+      id: '/contato'
+      path: '/contato'
+      fullPath: '/contato'
+      preLoaderRoute: typeof ContatoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lgpd': {
+      id: '/lgpd'
+      path: '/lgpd'
+      fullPath: '/lgpd'
+      preLoaderRoute: typeof LgpdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacidade': {
+      id: '/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof PrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sobre': {
+      id: '/sobre'
+      path: '/sobre'
+      fullPath: '/sobre'
+      preLoaderRoute: typeof SobreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/termos': {
+      id: '/termos'
+      path: '/termos'
+      fullPath: '/termos'
+      preLoaderRoute: typeof TermosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/transparencia': {
+      id: '/transparencia'
+      path: '/transparencia'
+      fullPath: '/transparencia'
+      preLoaderRoute: typeof TransparenciaRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  ContatoRoute: ContatoRoute,
+  FaqRoute: FaqRoute,
+  LgpdRoute: LgpdRoute,
+  PrivacidadeRoute: PrivacidadeRoute,
+  SobreRoute: SobreRoute,
+  TermosRoute: TermosRoute,
+  TransparenciaRoute: TransparenciaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
