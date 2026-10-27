@@ -84,7 +84,7 @@ export function sendWinnerEmail(p: { to: string; nickname: string; roundNumber: 
   );
 }
 
-export function sendPromotionalEmail(p: { to: string; nickname: string; subject: string; bodyText: string; ctaUrl?: string; ctaLabel?: string; unsubscribeUrl: string }) {
+export function sendPromotionalEmail(p: { to: string; nickname: string; subject: string; bodyText: string; ctaUrl?: string | undefined; ctaLabel?: string | undefined; unsubscribeUrl: string }) {
   const paragraphs = p.bodyText
     .split(/\n{2,}/)
     .map((t) => `<p>${escapeHtml(t).replace(/\n/g, "<br>")}</p>`)

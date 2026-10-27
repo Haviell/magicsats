@@ -7,7 +7,7 @@ export type AuthUser = {
   name: string
   username: string
   email: string
-  createdAt?: string
+  createdAt?: string | undefined
 }
 
 async function toAuthUser(u: { id: string; email?: string; created_at?: string; user_metadata?: Record<string, unknown> }): Promise<AuthUser> {
