@@ -14,13 +14,158 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          in_game_balance: number
+          username: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id: string
+          in_game_balance?: number
+          username: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          in_game_balance?: number
+          username?: string
+        }
+        Relationships: []
+      }
+      raffle_winners: {
+        Row: {
+          created_at: string
+          has_claimed_next_round_number: boolean | null
+          id: number
+          prize_satoshis: number
+          raffle_id: number | null
+          round_number: number
+          user_id: string | null
+          winning_number: number
+        }
+        Insert: {
+          created_at?: string
+          has_claimed_next_round_number?: boolean | null
+          id?: number
+          prize_satoshis: number
+          raffle_id?: number | null
+          round_number: number
+          user_id?: string | null
+          winning_number: number
+        }
+        Update: {
+          created_at?: string
+          has_claimed_next_round_number?: boolean | null
+          id?: number
+          prize_satoshis?: number
+          raffle_id?: number | null
+          round_number?: number
+          user_id?: string | null
+          winning_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raffle_winners_raffle_id_fkey"
+            columns: ["raffle_id"]
+            isOneToOne: false
+            referencedRelation: "raffles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raffle_winners_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      raffles: {
+        Row: {
+          created_at: string
+          id: number
+          round_number: number
+          status: string | null
+          ticket_price: number
+          total_prize: number
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          round_number: number
+          status?: string | null
+          ticket_price: number
+          total_prize: number
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          round_number?: number
+          status?: string | null
+          ticket_price?: number
+          total_prize?: number
+        }
+        Relationships: []
+      }
+      tickets: {
+        Row: {
+          created_at: string
+          id: string
+          raffle_id: number | null
+          ticket_number: number
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          raffle_id?: number | null
+          ticket_number: number
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          raffle_id?: number | null
+          ticket_number?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tickets_raffle_id_fkey"
+            columns: ["raffle_id"]
+            isOneToOne: false
+            referencedRelation: "raffles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_auth_email_by_username: { Args: { uname: string }; Returns: string }
+      is_round_winner: {
+        Args: { check_user_id: string; target_round: number }
+        Returns: {
+          is_winner: boolean
+          prize_satoshis: number
+          winning_number: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
