@@ -1,6 +1,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
-import { createClient } from '@/utils/supabase/client'
+import { supabase as sbClient } from '@/integrations/supabase/client'
+const createClient = () => sbClient
 
 export type AuthUser = {
   id: string

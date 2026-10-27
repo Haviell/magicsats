@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from '@/lib/next-compat'
 import { legalPages } from '@/lib/legal-content'
 
 const menu = [

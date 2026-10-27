@@ -26,7 +26,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { ListOrdered, Share2, Users, Bitcoin, ChevronLeft, ChevronRight, Factory, Shield, HelpCircle, Settings, BarChart2, X, Scale, Copy, RotateCcw, Lock, Hash, Fingerprint, Scroll, Timer, Trophy, LogIn, Lightbulb, Wallet, ArrowDown, ArrowUpRight, Check, AlertTriangle, Eye, EyeOff, Bell, BellOff, Moon, Sun, Globe, Smartphone, Filter, Search, QrCode, Mail, User, ArrowLeft, ArrowRight, Star, Info, Zap, ShieldCheck, Gift, Send, Key, CheckCircle2 } from "lucide-react"
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from '@/lib/next-compat'
 import QRCodeLib from 'qrcode'
 import { useToast } from '@/hooks/use-toast'
 import { initializeRoundZero } from '@/lib/raffle'
@@ -323,7 +323,7 @@ const DepositModal = ({
   const [qrCodeDataURL, setQrCodeDataURL] = useState<string>('');
   const [isGeneratingQR, setIsGeneratingQR] = useState(false);
 
-  const bitcoinAddress = process.env.NEXT_PUBLIC_BITCOIN_DEPOSIT_ADDRESS || 'bc1qmagicsatsanonwallet9247xzk';
+  const bitcoinAddress = import.meta.env.VITE_BITCOIN_DEPOSIT_ADDRESS || 'bc1qmagicsatsanonwallet9247xzk';
 
   // Gera o invoice da Lightning Network simulado/preparado para backend
   const activeSats = customSats ? Math.max(100, parseInt(customSats) || 0) : selectedSats;

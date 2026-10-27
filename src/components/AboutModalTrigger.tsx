@@ -1,5 +1,5 @@
 
-import Link from "next/link";
+import Link from '@/lib/next-compat';
 
 const footerLinks = [
   { href: "/sobre", label: "Sobre" },

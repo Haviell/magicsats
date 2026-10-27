@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
-import { createClient } from '@/utils/supabase/client'
+import { supabase as sbClient } from '@/integrations/supabase/client'
+const createClient = () => sbClient
 
 export interface UserProfile {
   id: string

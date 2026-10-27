@@ -1,7 +1,7 @@
 
 import { Share, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "./ui/button"
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from '@/lib/next-compat'
 
 interface NavigationBarProps {
   onShareClick?: () => void
