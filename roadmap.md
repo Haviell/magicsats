@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Corrigir página que não carrega por falta da configuração pública e verificar abertura no navegador
 - [ ] Bloquear próxima rifa até a atual acabar (exceção: vencedor da rodada anterior, só o número vencedor)
 - [ ] Login por e-mail ou nick + senha sem expor e-mails
 - [ ] Melhorar UI/UX da carteira
