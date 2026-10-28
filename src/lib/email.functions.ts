@@ -1,6 +1,29 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
+
+// Pending email migration: keep its contract separate from generated live types.
+// Database errors remain fail-closed: no campaign is sent without a saved token.
+type UnsubscribeToken = {
+  token_hash: string;
+  user_id: string;
+  expires_at: string;
+  used_at: string | null;
+};
+type EmailDatabase = Database & {
+  public: {
+    Tables: {
+      email_unsubscribe_tokens: {
+        Row: UnsubscribeToken;
+        Insert: Omit<UnsubscribeToken, "used_at"> & { used_at?: string | null };
+        Update: Partial<UnsubscribeToken>;
+        Relationships: [];
+      };
+    };
+  };
+};
 
 function getTrustedOrigin(requestedOrigin: string) {
   const request = getRequest();
@@ -95,7 +118,7 @@ export const sendPromotionalCampaign = createServerFn({ method: "POST" })
       const token = randomBytes(32).toString("hex");
       const tokenHash = createHash("sha256").update(token).digest("hex");
       const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
-      const { error: tokenError } = await supabaseAdmin
+      const { error: tokenError } = await (supabaseAdmin as SupabaseClient<EmailDatabase>)
         .from("email_unsubscribe_tokens")
         .insert({ token_hash: tokenHash, user_id: p.id, expires_at: expiresAt });
       if (tokenError) {
@@ -124,7 +147,7 @@ export const sendPromotionalCampaign = createServerFn({ method: "POST" })
         sent++;
       } else {
         failed++;
-        const { error: revokeError } = await supabaseAdmin
+        const { error: revokeError } = await (supabaseAdmin as SupabaseClient<EmailDatabase>)
           .from("email_unsubscribe_tokens")
           .delete()
           .eq("token_hash", tokenHash);
@@ -148,7 +171,7 @@ export const unsubscribeFromMarketing = createServerFn({ method: "POST" })
     const tokenHash = createHash("sha256").update(data.token).digest("hex");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const now = new Date().toISOString();
-    const { data: savedToken, error: tokenError } = await supabaseAdmin
+    const { data: savedToken, error: tokenError } = await (supabaseAdmin as SupabaseClient<EmailDatabase>)
       .from("email_unsubscribe_tokens")
       .select("user_id")
       .eq("token_hash", tokenHash)
@@ -167,7 +190,7 @@ export const unsubscribeFromMarketing = createServerFn({ method: "POST" })
       .eq("id", savedToken.user_id);
     if (profileError) throw new Error("Não foi possível atualizar sua preferência.");
 
-    const { error: revokeError } = await supabaseAdmin
+    const { error: revokeError } = await (supabaseAdmin as SupabaseClient<EmailDatabase>)
       .from("email_unsubscribe_tokens")
       .update({ used_at: now })
       .eq("user_id", savedToken.user_id)

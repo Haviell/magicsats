@@ -1,1 +1,3 @@
 - Components ported from the original Next.js MagicSats app use `@/lib/next-compat` for navigation (Link/useRouter/useSearchParams) — keeps the ported code unchanged on TanStack Router.
+- Keep explicit public connection defines in Vite with environment overrides and project defaults; this prevents missing browser configuration without editing the generated client or exposing server secrets.
+- Keep pending email-token schema types local to email functions, separate from generated live database types; token persistence errors must prevent promotional sends.

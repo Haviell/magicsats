@@ -176,30 +176,6 @@ export type Database = {
         }
         Relationships: []
       }
-      email_unsubscribe_tokens: {
-        Row: {
-          created_at: string
-          expires_at: string
-          token_hash: string
-          used_at: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          expires_at: string
-          token_hash: string
-          used_at?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          expires_at?: string
-          token_hash?: string
-          used_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
@@ -222,20 +198,10 @@ export type Database = {
           allowed_number: number
           can_view: boolean
           early_access: boolean
-          number_claimed: boolean
           open_round: number
         }[]
       }
       get_sold_numbers: { Args: { target_round: number }; Returns: number[] }
-      get_my_winning_numbers: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          has_claimed_next_round_number: boolean
-          prize_satoshis: number
-          round_number: number
-          winning_number: number
-        }[]
-      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
