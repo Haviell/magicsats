@@ -35,7 +35,7 @@ export async function getRoundAccess(targetRound: number): Promise<RoundAccess> 
     earlyAccess: access.early_access,
     allowedNumber: access.allowed_number,
     openRound: access.open_round,
-    numberClaimed: access.number_claimed,
+    numberClaimed: "number_claimed" in access && access.number_claimed === true,
   };
 }
 
