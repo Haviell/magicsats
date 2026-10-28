@@ -14,10 +14,10 @@ export default defineConfig({
     // Only public connection settings belong here; never inject server secrets.
     define: {
       "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
-        publicEnv.VITE_SUPABASE_URL || "https://huavidsvvlyrzmxxacsg.supabase.co",
+        publicEnv["VITE_SUPABASE_URL"] || "https://huavidsvvlyrzmxxacsg.supabase.co",
       ),
       "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
-        publicEnv.VITE_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_7VOJtc_lwzk-pOeVl1yX0g_Fww4_kwz",
+        publicEnv["VITE_SUPABASE_PUBLISHABLE_KEY"] || "sb_publishable_7VOJtc_lwzk-pOeVl1yX0g_Fww4_kwz",
       ),
     },
   },
