@@ -238,11 +238,7 @@ const UserDashboard = ({
       {/* Header do Usuário */}
       <div className="flex items-center justify-between mb-5 relative z-10">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center shadow-lg border-2 border-white/20">
-            <span className="font-extrabold text-lg text-white">
-              {isLoggedIn ? userName.charAt(0).toUpperCase() : '⚡'}
-            </span>
-          </div>
+          <AvatarPicker enabled={isLoggedIn} fallback={isLoggedIn ? userName.charAt(0).toUpperCase() : '⚡'} />
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5">
               <span className="text-sm font-bold text-gray-100 tracking-tight">

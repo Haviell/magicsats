@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      email_unsubscribe_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          token_hash: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          token_hash: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          token_hash?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           balance: number
@@ -183,6 +207,15 @@ export type Database = {
     Functions: {
       claim_winner_number: { Args: { target_round: number }; Returns: number }
       current_open_round: { Args: never; Returns: number }
+      get_my_winning_numbers: {
+        Args: never
+        Returns: {
+          has_claimed_next_round_number: boolean
+          prize_satoshis: number
+          round_number: number
+          winning_number: number
+        }[]
+      }
       get_public_winners: {
         Args: never
         Returns: {
@@ -198,6 +231,7 @@ export type Database = {
           allowed_number: number
           can_view: boolean
           early_access: boolean
+          number_claimed: boolean
           open_round: number
         }[]
       }
