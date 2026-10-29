@@ -2896,7 +2896,7 @@ export function BitcoinRaffleImproved() {
     }))
   }
 
-  const handleWhatsAppRedirect = async () => {
+  const handlePayWithBalance = async () => {
     const selectedNumbers = selectedNumbersByRound[activeRoundId] || []
     if (selectedNumbers.length === 0) {
       toast({
@@ -3459,7 +3459,7 @@ export function BitcoinRaffleImproved() {
 
             <div className="mt-6 flex justify-center">
               <Button
-                aria-label="Solicitar números selecionados pelo WhatsApp"
+                aria-label="Pagar números selecionados com saldo"
                 role="button"
                 className="h-14 px-8 font-medium border-[4px] transition-all duration-200
                   bg-gradient-to-b from-green-500 to-green-600
@@ -3473,7 +3473,7 @@ export function BitcoinRaffleImproved() {
                   rounded-xl
                   text-white text-lg
                   group"
-                onClick={handleWhatsAppRedirect}
+                onClick={handlePayWithBalance}
                 disabled={
                   currentRound.roundNumber !== openRoundNumber ||
                   currentRound.status !== 'active' ||

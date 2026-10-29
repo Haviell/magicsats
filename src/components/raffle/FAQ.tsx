@@ -47,7 +47,7 @@ const faqItems = [
   {
     emoji: '📱',
     question: 'Como acompanho o sorteio?',
-    answer: 'Você pode acompanhar ao vivo pelo nosso canal no YouTube e recebe notificações por WhatsApp.'
+    answer: 'Você pode acompanhar ao vivo pelo nosso canal no YouTube e recebe notificações por e-mail.'
   },
   {
     emoji: '🔄',
