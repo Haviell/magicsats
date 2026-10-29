@@ -1,4 +1,5 @@
 // @ts-nocheck -- ported as-is from the original MagicSats code
+import { AvatarPicker } from "./AvatarPicker"
 
 /**
  * ⚠️ IMPORTANTE - ROUND #0 É ARQUIVO HISTÓRICO ⚠️
