@@ -1,4 +1,5 @@
 # Roadmap
+- [x] Corrigir falha do botão Bitcoin ao abrir a carteira — callback de configurações ausente
 - [x] Corrigir rifa inicial para 0 e verificar bloqueio da rifa 1 — confirmado no navegador e nas regras de acesso
 - [ ] Ocultar botão Lovable — bloqueado por exigência de plano Pro e permissão de editor
 - [x] Corrigir página que não carrega por falta da configuração pública e verificar abertura no navegador

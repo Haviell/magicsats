@@ -217,6 +217,7 @@ const UserDashboard = ({
   userBalance = 0,
   inGameBalance = 0,
   availableToWithdraw = 0,
+  onSettings,
 }: UserDashboardProps) => {
   const currentBalanceBRL = calculateBRLValue(userBalance);
   const userBalanceSats = Math.round(userBalance * 100000000);
