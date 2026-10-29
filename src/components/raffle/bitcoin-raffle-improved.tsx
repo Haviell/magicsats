@@ -1,4 +1,5 @@
 // @ts-nocheck -- ported as-is from the original MagicSats code
+import { AvatarPicker } from "./AvatarPicker"
 
 /**
  * ⚠️ IMPORTANTE - ROUND #0 É ARQUIVO HISTÓRICO ⚠️
@@ -238,11 +239,7 @@ const UserDashboard = ({
       {/* Header do Usuário */}
       <div className="flex items-center justify-between mb-5 relative z-10">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center shadow-lg border-2 border-white/20">
-            <span className="font-extrabold text-lg text-white">
-              {isLoggedIn ? userName.charAt(0).toUpperCase() : '⚡'}
-            </span>
-          </div>
+          <AvatarPicker enabled={isLoggedIn} fallback={isLoggedIn ? userName.charAt(0).toUpperCase() : '⚡'} />
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5">
               <span className="text-sm font-bold text-gray-100 tracking-tight">
@@ -2896,7 +2893,7 @@ export function BitcoinRaffleImproved() {
     }))
   }
 
-  const handleWhatsAppRedirect = async () => {
+  const handlePayWithBalance = async () => {
     const selectedNumbers = selectedNumbersByRound[activeRoundId] || []
     if (selectedNumbers.length === 0) {
       toast({
@@ -2927,34 +2924,10 @@ export function BitcoinRaffleImproved() {
       return
     }
 
-    const roundNumber = currentRound?.roundNumber || 0
-    const ticketPrice = currentRound?.ticketPrice || 0.00001000
-    const totalValue = selectedNumbers.length * ticketPrice
-
-    const phoneNumber = '+55 19 98111-6315'
-    const message = `Olá! Gostaria de comprar os seguintes números da rifa Round #${roundNumber}: ${selectedNumbers.join(', ')}
-
-Total: ${selectedNumbers.length} números
-Valor: ${totalValue.toFixed(8)} BTC (${(totalValue * 100000000).toFixed(0)} sats)`
-
-    const whatsappUrl = `https://wa.me/${phoneNumber.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
-    const whatsappWindow = window.open(whatsappUrl, '_blank')
-    if (!whatsappWindow) {
-      toast({
-        title: "Não foi possível abrir o WhatsApp",
-        description: "Permita pop-ups para continuar. Os números ainda não foram reservados.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setSelectedNumbersByRound(prev => ({
-      ...prev,
-      [activeRoundId]: []
-    }))
+    // Pagamento direto pelo site via saldo da carteira (BTCPay Server — integração pendente)
     toast({
-      title: "Pedido aberto no WhatsApp",
-      description: "Os números só serão confirmados após validação; ainda não estão reservados.",
+      title: "Pagamento em breve",
+      description: "O pagamento com saldo da carteira (BTCPay Server) será ativado em breve. Seus números ainda não foram reservados.",
     })
   }
 
@@ -3483,7 +3456,7 @@ Valor: ${totalValue.toFixed(8)} BTC (${(totalValue * 100000000).toFixed(0)} sats
 
             <div className="mt-6 flex justify-center">
               <Button
-                aria-label="Solicitar números selecionados pelo WhatsApp"
+                aria-label="Pagar números selecionados com saldo"
                 role="button"
                 className="h-14 px-8 font-medium border-[4px] transition-all duration-200
                   bg-gradient-to-b from-green-500 to-green-600
@@ -3497,7 +3470,7 @@ Valor: ${totalValue.toFixed(8)} BTC (${(totalValue * 100000000).toFixed(0)} sats
                   rounded-xl
                   text-white text-lg
                   group"
-                onClick={handleWhatsAppRedirect}
+                onClick={handlePayWithBalance}
                 disabled={
                   currentRound.roundNumber !== openRoundNumber ||
                   currentRound.status !== 'active' ||
