@@ -2927,34 +2927,10 @@ export function BitcoinRaffleImproved() {
       return
     }
 
-    const roundNumber = currentRound?.roundNumber || 0
-    const ticketPrice = currentRound?.ticketPrice || 0.00001000
-    const totalValue = selectedNumbers.length * ticketPrice
-
-    const phoneNumber = '+55 19 98111-6315'
-    const message = `Olá! Gostaria de comprar os seguintes números da rifa Round #${roundNumber}: ${selectedNumbers.join(', ')}
-
-Total: ${selectedNumbers.length} números
-Valor: ${totalValue.toFixed(8)} BTC (${(totalValue * 100000000).toFixed(0)} sats)`
-
-    const whatsappUrl = `https://wa.me/${phoneNumber.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
-    const whatsappWindow = window.open(whatsappUrl, '_blank')
-    if (!whatsappWindow) {
-      toast({
-        title: "Não foi possível abrir o WhatsApp",
-        description: "Permita pop-ups para continuar. Os números ainda não foram reservados.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setSelectedNumbersByRound(prev => ({
-      ...prev,
-      [activeRoundId]: []
-    }))
+    // Pagamento direto pelo site via saldo da carteira (BTCPay Server — integração pendente)
     toast({
-      title: "Pedido aberto no WhatsApp",
-      description: "Os números só serão confirmados após validação; ainda não estão reservados.",
+      title: "Pagamento em breve",
+      description: "O pagamento com saldo da carteira (BTCPay Server) será ativado em breve. Seus números ainda não foram reservados.",
     })
   }
 
