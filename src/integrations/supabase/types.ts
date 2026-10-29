@@ -243,6 +243,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_current_round_winner: { Args: never; Returns: boolean }
       is_username_available: { Args: { uname: string }; Returns: boolean }
     }
     Enums: {
