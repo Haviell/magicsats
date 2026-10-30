@@ -3255,8 +3255,6 @@ export function BitcoinRaffleImproved() {
                 <>
                   <p className="text-lg">🏆 0.00044000 BTC</p>
                   <p className="text-sm text-muted-foreground">(Quarenta e quatro mil Satoshis)</p>
-                  <p className="text-lg">🥇 0.00040000 ₿</p>
-                  <p className="text-lg">🥈 0.00004000 ₿</p>
                 </>
               ) : (
                 // Round #1+ - Nova configuração (template global)
