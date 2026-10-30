@@ -1,3 +1,4 @@
+import { CookieConsent } from "@/components/CookieConsent";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -122,6 +123,7 @@ function RootComponent() {
       <RaffleProvider>
         <NavigationBar />
         <Outlet />
+        <CookieConsent />
       </RaffleProvider>
       <footer className="w-full text-center py-4 text-xs text-black/50 bg-white">
         <div className="mb-1">
