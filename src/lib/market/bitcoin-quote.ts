@@ -13,7 +13,7 @@ export type BitcoinQuote = {
   stale: boolean
 }
 
-type Deps = { fetch: typeof fetch; now: () => number; apiKey?: string; keyType?: string; ttlMs?: number; sleep?: (ms: number) => Promise<void> }
+type Deps = { fetch: typeof fetch; now: () => number; apiKey?: string | undefined; keyType?: string | undefined; ttlMs?: number | undefined; sleep?: (ms: number) => Promise<void> }
 
 let cache: { quote: BitcoinQuote; fetchedAt: number } | null = null
 export function resetQuoteCache() { cache = null }
