@@ -19,6 +19,7 @@ import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as TransparenciaRouteImport } from './routes/transparencia'
 import { Route as AuthRedefinirSenhaRouteImport } from './routes/auth.redefinir-senha'
+import { Route as ApiMarketBitcoinRouteImport } from './routes/api/market/bitcoin'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -70,6 +71,11 @@ const AuthRedefinirSenhaRoute = AuthRedefinirSenhaRouteImport.update({
   path: '/auth/redefinir-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMarketBitcoinRoute = ApiMarketBitcoinRouteImport.update({
+  id: '/api/market/bitcoin',
+  path: '/api/market/bitcoin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/termos': typeof TermosRoute
   '/transparencia': typeof TransparenciaRoute
   '/auth/redefinir-senha': typeof AuthRedefinirSenhaRoute
+  '/api/market/bitcoin': typeof ApiMarketBitcoinRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/termos': typeof TermosRoute
   '/transparencia': typeof TransparenciaRoute
   '/auth/redefinir-senha': typeof AuthRedefinirSenhaRoute
+  '/api/market/bitcoin': typeof ApiMarketBitcoinRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -107,6 +115,7 @@ export interface FileRoutesById {
   '/termos': typeof TermosRoute
   '/transparencia': typeof TransparenciaRoute
   '/auth/redefinir-senha': typeof AuthRedefinirSenhaRoute
+  '/api/market/bitcoin': typeof ApiMarketBitcoinRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -121,6 +130,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/transparencia'
     | '/auth/redefinir-senha'
+    | '/api/market/bitcoin'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -133,6 +143,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/transparencia'
     | '/auth/redefinir-senha'
+    | '/api/market/bitcoin'
   id:
     | '__root__'
     | '/'
@@ -145,6 +156,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/transparencia'
     | '/auth/redefinir-senha'
+    | '/api/market/bitcoin'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -158,6 +170,7 @@ export interface RootRouteChildren {
   TermosRoute: typeof TermosRoute
   TransparenciaRoute: typeof TransparenciaRoute
   AuthRedefinirSenhaRoute: typeof AuthRedefinirSenhaRoute
+  ApiMarketBitcoinRoute: typeof ApiMarketBitcoinRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -232,6 +245,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRedefinirSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/market/bitcoin': {
+      id: '/api/market/bitcoin'
+      path: '/api/market/bitcoin'
+      fullPath: '/api/market/bitcoin'
+      preLoaderRoute: typeof ApiMarketBitcoinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -246,6 +266,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermosRoute: TermosRoute,
   TransparenciaRoute: TransparenciaRoute,
   AuthRedefinirSenhaRoute: AuthRedefinirSenhaRoute,
+  ApiMarketBitcoinRoute: ApiMarketBitcoinRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

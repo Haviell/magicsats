@@ -2808,34 +2808,34 @@ export function BitcoinRaffleImproved() {
   }, [])
 
   useEffect(() => {
+    let last = 0
+    let cancelled = false
+    let flash: ReturnType<typeof setTimeout> | undefined
     const fetchBtcPrice = async () => {
-      setIsBtcLoading(true)
       try {
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=brl')
+        const response = await fetch('/api/market/bitcoin')
+        if (!response.ok) throw new Error('Cotação temporariamente indisponível')
         const data = await response.json()
-        const newPrice = data.bitcoin.brl
-
-        if (btcPrice > 0) {
-          setPreviousBtcPrice(btcPrice)
-          setPriceChangeDirection(newPrice > btcPrice ? 'up' : 'down')
+        const newPrice = Number(data.btc_brl)
+        if (cancelled || !(newPrice > 0)) return
+        if (last > 0 && newPrice !== last) {
+          setPreviousBtcPrice(last)
+          setPriceChangeDirection(newPrice > last ? 'up' : 'down')
+          flash = setTimeout(() => setPriceChangeDirection(null), 1000)
         }
-
+        last = newPrice
         setBtcPrice(newPrice)
-
-        setTimeout(() => {
-          setPriceChangeDirection(null)
-        }, 1000)
       } catch (error) {
-        console.error(error)
+        console.warn(error)
       } finally {
-        setIsBtcLoading(false)
+        if (!cancelled) setIsBtcLoading(false)
       }
     }
-
+    setIsBtcLoading(true)
     fetchBtcPrice()
-    const interval = setInterval(fetchBtcPrice, 30000)
-    return () => clearInterval(interval)
-  }, [btcPrice])
+    const interval = setInterval(fetchBtcPrice, 60000)
+    return () => { cancelled = true; clearInterval(interval); if (flash) clearTimeout(flash) }
+  }, [])
 
   useEffect(() => {
     try {
