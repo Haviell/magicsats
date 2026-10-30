@@ -22,13 +22,8 @@ export function initializeRoundZero(): RaffleRound {
     [
       {
         position: 1,
-        amount: 40000, // 0.00040000 BTC em satoshis
-        description: "1º Lugar - 0.00040000 BTC"
-      },
-      {
-        position: 2,
-        amount: 4000, // 0.00004000 BTC em satoshis
-        description: "2º Lugar - 0.00004000 BTC"
+        amount: 44000, // 0.00044000 BTC em satoshis (prêmio único)
+        description: "Prêmio único - 0.00044000 BTC"
       }
     ]
   )
