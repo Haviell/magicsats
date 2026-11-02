@@ -2813,10 +2813,8 @@ export function BitcoinRaffleImproved() {
     let flash: ReturnType<typeof setTimeout> | undefined
     const fetchBtcPrice = async () => {
       try {
-        const response = await fetch('/api/market/bitcoin')
-        if (!response.ok) throw new Error('Cotação temporariamente indisponível')
-        const data = await response.json()
-        const newPrice = Number(data.btc_brl)
+        const { services } = await import('@/services')
+        const newPrice = (await services.marketPrice.getBitcoinPrice('BRL')).price
         if (cancelled || !(newPrice > 0)) return
         if (last > 0 && newPrice !== last) {
           setPreviousBtcPrice(last)
