@@ -16,7 +16,7 @@ export const Route = createFileRoute("/rifa")({
 
 function RifaPage() {
   return (
-    <main className="container mx-auto p-4">
+    <main className="container mx-auto px-2 py-4 sm:p-4 overflow-x-hidden">
       <ClientOnly fallback={<div className="min-h-[60vh]" />}>
         <BitcoinRaffleImproved />
       </ClientOnly>

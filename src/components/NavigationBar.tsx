@@ -201,7 +201,7 @@ export default function NavigationBar() {
         )}
 
         <div className="flex-1 flex items-center h-7">
-          <span className="text-sm font-medium px-3 select-none">{getPageTitle()}</span>
+          <span className="text-xs sm:text-sm font-medium px-2 sm:px-3 select-none truncate min-w-0">{getPageTitle()}</span>
         </div>
 
         <Button

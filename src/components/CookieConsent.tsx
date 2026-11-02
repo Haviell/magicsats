@@ -21,9 +21,9 @@ export function CookieConsent() {
           Usamos cookies essenciais para login e funcionamento do site, conforme a LGPD. Cookies opcionais só com seu consentimento.{" "}
           <Link to="/privacidade" className="underline">Política de privacidade</Link>
         </p>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => choose("essential")}>Só essenciais</Button>
-          <Button onClick={() => choose("all")}>Aceitar todos</Button>
+        <div className="grid grid-cols-2 gap-2 sm:flex shrink-0">
+          <Button variant="outline" className="w-full sm:w-auto" onClick={() => choose("essential")}>Só essenciais</Button>
+          <Button className="w-full sm:w-auto" onClick={() => choose("all")}>Aceitar todos</Button>
         </div>
       </div>
     </div>
