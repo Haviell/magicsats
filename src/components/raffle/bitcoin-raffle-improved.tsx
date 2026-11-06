@@ -2922,10 +2922,10 @@ export function BitcoinRaffleImproved() {
       return
     }
 
-    // Pagamento direto pelo site via saldo da carteira (BTCPay Server — integração pendente)
+    // Pagamento direto pelo site via saldo da carteira (Coinbase — integração pendente)
     toast({
       title: "Pagamento em breve",
-      description: "O pagamento com saldo da carteira (BTCPay Server) será ativado em breve. Seus números ainda não foram reservados.",
+      description: "O pagamento com saldo da carteira (Coinbase) será ativado em breve. Seus números ainda não foram reservados.",
     })
   }
 

@@ -1,6 +1,6 @@
 // Mock implementations: no real money moves. Safe to use while integrations are off.
 import type {
-  BtcpayService, DepositService, Invoice, LedgerEntry, LedgerService, MarketPriceService,
+  CryptoPaymentProvider, DepositService, Invoice, LedgerEntry, LedgerService, MarketPriceService,
   Payout, WalletService, WithdrawalService, WebhookService,
 } from "./types";
 
@@ -19,7 +19,7 @@ export class MockMarketPriceService implements MarketPriceService {
   }
 }
 
-export class MockBtcpayService implements BtcpayService {
+export class MockCoinbaseProvider implements CryptoPaymentProvider {
   private invoices = new Map<string, Invoice>();
   async createInvoice(input: { amountSats: number }) {
     const inv: Invoice = {
@@ -40,19 +40,19 @@ export class MockBtcpayService implements BtcpayService {
 }
 
 export class MockDepositService implements DepositService {
-  constructor(private btcpay: BtcpayService) {}
+  constructor(private payments: CryptoPaymentProvider) {}
   requestDeposit(userId: string, amountSats: number) {
-    return this.btcpay.createInvoice({ userId, amountSats, purpose: "deposit" });
+    return this.payments.createInvoice({ userId, amountSats, purpose: "deposit" });
   }
-  getDeposit(invoiceId: string) { return this.btcpay.getInvoice(invoiceId); }
+  getDeposit(invoiceId: string) { return this.payments.getInvoice(invoiceId); }
 }
 
 export class MockWithdrawalService implements WithdrawalService {
   private list: Payout[] = [];
-  constructor(private btcpay: BtcpayService) {}
+  constructor(private payments: CryptoPaymentProvider) {}
   async requestWithdrawal(input: { userId: string; amountSats: number; destination: string }) {
     if (!Number.isInteger(input.amountSats) || input.amountSats <= 0) throw new Error("Valor inválido");
-    const p = await this.btcpay.createPayout(input);
+    const p = await this.payments.createPayout(input);
     this.list.push(p);
     return p;
   }
@@ -82,7 +82,7 @@ export class MockWalletService implements WalletService {
   }
 }
 
-/** Mock never accepts webhooks: real one must verify BTCPay HMAC (BTCPay-Sig). */
+/** Mock never accepts webhooks: real one must verify Coinbase HMAC (X-CC-Webhook-Signature). */
 export class MockWebhookService implements WebhookService {
   async verify() { return false; }
   parse(raw: string) { const r = JSON.parse(raw); return { id: String(r.deliveryId ?? ""), type: r.type, invoiceId: r.invoiceId, raw: r }; }

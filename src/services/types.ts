@@ -1,4 +1,4 @@
-// Contracts the UI depends on. Providers (CoinGecko, BTCPay, etc.) live behind these.
+// Contracts the UI depends on. Providers (CoinGecko, Coinbase, etc.) live behind these.
 // All money amounts are integer satoshis; BRL/USD values are display-only.
 
 export type FiatCurrency = "BRL" | "USD";
@@ -50,7 +50,7 @@ export interface Payout {
   createdAt: string;
 }
 
-export interface BtcpayService {
+export interface CryptoPaymentProvider {
   createInvoice(input: CreateInvoiceInput): Promise<Invoice>;
   getInvoice(invoiceId: string): Promise<Invoice>;
   createPayout(input: CreatePayoutInput): Promise<Payout>;

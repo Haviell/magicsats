@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { MockLedgerService, MockWithdrawalService, MockBtcpayService, MockWebhookService } from "@/services/mocks";
+import { MockLedgerService, MockWithdrawalService, MockCoinbaseProvider, MockWebhookService } from "@/services/mocks";
 import { PAYMENTS_ENABLED } from "@/services";
 
 describe("service layer", () => {
@@ -14,7 +14,7 @@ describe("service layer", () => {
     await expect(new MockLedgerService().record({ userId: "u", type: "prize", amountSats: 1.5, reference: null })).rejects.toThrow();
   });
   it("rejects non-positive withdrawals", async () => {
-    await expect(new MockWithdrawalService(new MockBtcpayService()).requestWithdrawal({ userId: "u", amountSats: 0, destination: "x" })).rejects.toThrow();
+    await expect(new MockWithdrawalService(new MockCoinbaseProvider()).requestWithdrawal({ userId: "u", amountSats: 0, destination: "x" })).rejects.toThrow();
   });
   it("mock webhook never verifies", async () => expect(await new MockWebhookService().verify()).toBe(false));
 });
