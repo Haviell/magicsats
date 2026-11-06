@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      deposits: {
+        Row: {
+          amount_sats: number
+          checkout_url: string | null
+          created_at: string
+          credited_at: string | null
+          expires_at: string | null
+          id: string
+          idempotency_key: string
+          provider: string
+          provider_checkout_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_sats: number
+          checkout_url?: string | null
+          created_at?: string
+          credited_at?: string | null
+          expires_at?: string | null
+          id?: string
+          idempotency_key: string
+          provider?: string
+          provider_checkout_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_sats?: number
+          checkout_url?: string | null
+          created_at?: string
+          credited_at?: string | null
+          expires_at?: string | null
+          id?: string
+          idempotency_key?: string
+          provider?: string
+          provider_checkout_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       email_unsubscribe_tokens: {
         Row: {
           created_at: string
@@ -37,6 +82,74 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      ledger_entries: {
+        Row: {
+          amount_sats: number
+          created_at: string
+          entry_type: string
+          id: string
+          reference: string
+          user_id: string
+        }
+        Insert: {
+          amount_sats: number
+          created_at?: string
+          entry_type: string
+          id?: string
+          reference: string
+          user_id: string
+        }
+        Update: {
+          amount_sats?: number
+          created_at?: string
+          entry_type?: string
+          id?: string
+          reference?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      payment_provider_events: {
+        Row: {
+          created_at: string
+          deposit_id: string | null
+          event_type: string
+          external_event_id: string
+          id: string
+          payload: Json
+          processed_at: string | null
+          provider: string
+        }
+        Insert: {
+          created_at?: string
+          deposit_id?: string | null
+          event_type: string
+          external_event_id: string
+          id?: string
+          payload: Json
+          processed_at?: string | null
+          provider: string
+        }
+        Update: {
+          created_at?: string
+          deposit_id?: string | null
+          event_type?: string
+          external_event_id?: string
+          id?: string
+          payload?: Json
+          processed_at?: string | null
+          provider?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_provider_events_deposit_id_fkey"
+            columns: ["deposit_id"]
+            isOneToOne: false
+            referencedRelation: "deposits"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -200,12 +313,61 @@ export type Database = {
         }
         Relationships: []
       }
+      wallets: {
+        Row: {
+          balance_sats: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance_sats?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance_sats?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      withdrawals: {
+        Row: {
+          amount_sats: number
+          created_at: string
+          destination: string
+          id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount_sats: number
+          created_at?: string
+          destination: string
+          id?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount_sats?: number
+          created_at?: string
+          destination?: string
+          id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       claim_winner_number: { Args: { target_round: number }; Returns: number }
+      credit_confirmed_deposit: {
+        Args: { _deposit_id: string }
+        Returns: boolean
+      }
       current_open_round: { Args: never; Returns: number }
       get_my_winning_numbers: {
         Args: never

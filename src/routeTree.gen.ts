@@ -20,6 +20,7 @@ import { Route as TermosRouteImport } from './routes/termos'
 import { Route as TransparenciaRouteImport } from './routes/transparencia'
 import { Route as AuthRedefinirSenhaRouteImport } from './routes/auth.redefinir-senha'
 import { Route as ApiMarketBitcoinRouteImport } from './routes/api/market/bitcoin'
+import { Route as ApiPublicCoinbaseWebhookRouteImport } from './routes/api/public/coinbase-webhook'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -76,6 +77,12 @@ const ApiMarketBitcoinRoute = ApiMarketBitcoinRouteImport.update({
   path: '/api/market/bitcoin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCoinbaseWebhookRoute =
+  ApiPublicCoinbaseWebhookRouteImport.update({
+    id: '/api/public/coinbase-webhook',
+    path: '/api/public/coinbase-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/transparencia': typeof TransparenciaRoute
   '/auth/redefinir-senha': typeof AuthRedefinirSenhaRoute
   '/api/market/bitcoin': typeof ApiMarketBitcoinRoute
+  '/api/public/coinbase-webhook': typeof ApiPublicCoinbaseWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -102,6 +110,7 @@ export interface FileRoutesByTo {
   '/transparencia': typeof TransparenciaRoute
   '/auth/redefinir-senha': typeof AuthRedefinirSenhaRoute
   '/api/market/bitcoin': typeof ApiMarketBitcoinRoute
+  '/api/public/coinbase-webhook': typeof ApiPublicCoinbaseWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -116,6 +125,7 @@ export interface FileRoutesById {
   '/transparencia': typeof TransparenciaRoute
   '/auth/redefinir-senha': typeof AuthRedefinirSenhaRoute
   '/api/market/bitcoin': typeof ApiMarketBitcoinRoute
+  '/api/public/coinbase-webhook': typeof ApiPublicCoinbaseWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -131,6 +141,7 @@ export interface FileRouteTypes {
     | '/transparencia'
     | '/auth/redefinir-senha'
     | '/api/market/bitcoin'
+    | '/api/public/coinbase-webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -144,6 +155,7 @@ export interface FileRouteTypes {
     | '/transparencia'
     | '/auth/redefinir-senha'
     | '/api/market/bitcoin'
+    | '/api/public/coinbase-webhook'
   id:
     | '__root__'
     | '/'
@@ -157,6 +169,7 @@ export interface FileRouteTypes {
     | '/transparencia'
     | '/auth/redefinir-senha'
     | '/api/market/bitcoin'
+    | '/api/public/coinbase-webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -171,6 +184,7 @@ export interface RootRouteChildren {
   TransparenciaRoute: typeof TransparenciaRoute
   AuthRedefinirSenhaRoute: typeof AuthRedefinirSenhaRoute
   ApiMarketBitcoinRoute: typeof ApiMarketBitcoinRoute
+  ApiPublicCoinbaseWebhookRoute: typeof ApiPublicCoinbaseWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -252,6 +266,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMarketBitcoinRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/coinbase-webhook': {
+      id: '/api/public/coinbase-webhook'
+      path: '/api/public/coinbase-webhook'
+      fullPath: '/api/public/coinbase-webhook'
+      preLoaderRoute: typeof ApiPublicCoinbaseWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -267,6 +288,7 @@ const rootRouteChildren: RootRouteChildren = {
   TransparenciaRoute: TransparenciaRoute,
   AuthRedefinirSenhaRoute: AuthRedefinirSenhaRoute,
   ApiMarketBitcoinRoute: ApiMarketBitcoinRoute,
+  ApiPublicCoinbaseWebhookRoute: ApiPublicCoinbaseWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
