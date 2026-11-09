@@ -13,7 +13,7 @@ export const Route = createFileRoute("/api/public/coinbase-webhook")({
         const ok = await verifyCoinbaseSignature(raw, request.headers.get("x-hook0-signature"), secret, request.headers);
         if (!ok) return new Response("Invalid signature", { status: 400 });
 
-        let ev: Record<string, any>;
+        let ev: any;
         try { ev = JSON.parse(raw); } catch { return new Response("Bad JSON", { status: 400 }); }
         const id = String(ev.id ?? ev.eventId ?? "");
         const type = String(ev.type ?? ev.eventType ?? "");

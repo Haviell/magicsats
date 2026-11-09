@@ -54,8 +54,8 @@ export interface ProviderEvent {
   provider: "coinbase" | "mock";
   id: string;
   type: string;
-  checkoutId?: string;
-  depositId?: string;
+  checkoutId?: string | undefined;
+  depositId?: string | undefined;
   raw: unknown;
 }
 
