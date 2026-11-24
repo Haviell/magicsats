@@ -86,15 +86,16 @@ export const sendPromotionalCampaign = createServerFn({ method: "POST" })
   .inputValidator((input: { subject: string; bodyText: string; ctaUrl?: string; ctaLabel?: string; origin: string }) => {
     const subject = String(input?.subject ?? "").trim();
     const bodyText = String(input?.bodyText ?? "").trim();
-    if (!subject || subject.length > 150) throw new Error("Assunto inválido.");
+    if (!subject || subject.length > 150 || /[\u0000-\u001f\u007f]/.test(subject)) throw new Error("Assunto inválido.");
     if (!bodyText || bodyText.length > 5000) throw new Error("Mensagem inválida.");
-    if (input.ctaUrl && !/^https:\/\//.test(input.ctaUrl)) throw new Error("Link precisa começar com https://");
+    if (input.ctaUrl && (!/^https:\/\/[^\s"'<>]+$/.test(input.ctaUrl) || input.ctaUrl.length > 500)) throw new Error("Link inválido.");
     if (!/^https?:\/\/[^/]+$/.test(String(input?.origin))) throw new Error("Origem inválida.");
     return { subject, bodyText, ctaUrl: input.ctaUrl, ctaLabel: input.ctaLabel?.slice(0, 40), origin: String(input.origin) };
   })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const origin = getTrustedOrigin(data.origin);
+    if (data.ctaUrl && new URL(data.ctaUrl).origin !== origin) throw new Error("O link deve apontar para o próprio site.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { sendPromotionalEmail, isResendConfigured } = await import("@/lib/email/resend.server");
     if (!isResendConfigured()) return { sent: 0, failed: 0, reason: "resend_not_configured" };
