@@ -50,6 +50,13 @@
       "when": 1795552312836,
       "tag": "0006_block_direct_ticket_insert",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795704545011,
+      "tag": "0007_restrict_has_role",
+      "breakpoints": true
     }
   ]
 }
