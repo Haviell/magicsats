@@ -2672,7 +2672,6 @@ export function BitcoinRaffleImproved() {
   const [isBtcLoading, setIsBtcLoading] = useState(true)
   const [showFAQ, setShowFAQ] = useState(false)
   const [isFaqTooltipOpen, setIsFaqTooltipOpen] = useState(false)
-  const [currentStep, setCurrentStep] = useState(0)
   const [randomInfo, setRandomInfo] = useState(magicSatsInfo[0])
   const [previousBtcPrice, setPreviousBtcPrice] = useState<number>(0)
   const [priceChangeDirection, setPriceChangeDirection] = useState<'up' | 'down' | null>(null)
@@ -2867,14 +2866,6 @@ export function BitcoinRaffleImproved() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isMenuOpen])
 
-  // Adicionar useEffect para controlar steps
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentStep(prev => (prev + 1) % steps.length)
-    }, 3000) // Muda a cada 3 segundos
-
-    return () => clearInterval(timer)
-  }, [])
 
   const toggleNumber = (number: number) => {
     const currentRound = rounds[activeRoundId]
@@ -3046,7 +3037,7 @@ export function BitcoinRaffleImproved() {
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent
-                      className="bg-popover/90 backdrop-blur-sm border shadow-lg animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 rounded-xl"
+                      className="bg-popover border shadow-lg animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 rounded-xl"
                       sideOffset={5}
                     >
                       <div className="text-center p-1">
