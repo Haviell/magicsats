@@ -8,3 +8,11 @@
 - [ ] Melhorar UI/UX da carteira
 - [ ] Preparar Resend (recuperação de senha, vencedor, promocionais com opt-in) — falta a chave RESEND_API_KEY
 - [ ] Privacidade: esconder saldos, e-mails e IDs dos outros usuários
+
+## Ajustes antes do lançamento
+- [ ] Compra com saldo: débito e emissão de números indivisíveis, sem duplicação
+- [ ] Encerramento e sorteio auditável; prêmio único e próxima rodada
+- [ ] Solicitações de saque: saldo reservado, histórico e cancelamento seguro; envio real desligado
+- [ ] Corrigir FAQ e regras para refletirem a operação real
+- [ ] Resend: remetente verificado e conexão; testar entrega — depende das credenciais do usuário
+- [ ] Validar os fluxos e publicar depois da revisão; dinheiro real permanece desligado

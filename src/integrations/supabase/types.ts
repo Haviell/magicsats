@@ -236,6 +236,7 @@ export type Database = {
           round_number: number
           status: string | null
           ticket_price: number
+          total_numbers: number
           total_prize: number
         }
         Insert: {
@@ -244,6 +245,7 @@ export type Database = {
           round_number: number
           status?: string | null
           ticket_price: number
+          total_numbers?: number
           total_prize: number
         }
         Update: {
@@ -252,9 +254,48 @@ export type Database = {
           round_number?: number
           status?: string | null
           ticket_price?: number
+          total_numbers?: number
           total_prize?: number
         }
         Relationships: []
+      }
+      ticket_purchases: {
+        Row: {
+          amount_sats: number
+          created_at: string
+          id: string
+          idempotency_key: string
+          numbers: number[]
+          raffle_id: number
+          user_id: string
+        }
+        Insert: {
+          amount_sats: number
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          numbers: number[]
+          raffle_id: number
+          user_id: string
+        }
+        Update: {
+          amount_sats?: number
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          numbers?: number[]
+          raffle_id?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_purchases_raffle_id_fkey"
+            columns: ["raffle_id"]
+            isOneToOne: false
+            referencedRelation: "raffles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tickets: {
         Row: {
@@ -337,6 +378,7 @@ export type Database = {
           created_at: string
           destination: string
           id: string
+          idempotency_key: string | null
           status: string
           user_id: string
         }
@@ -345,6 +387,7 @@ export type Database = {
           created_at?: string
           destination: string
           id?: string
+          idempotency_key?: string | null
           status?: string
           user_id: string
         }
@@ -353,6 +396,7 @@ export type Database = {
           created_at?: string
           destination?: string
           id?: string
+          idempotency_key?: string | null
           status?: string
           user_id?: string
         }
@@ -363,6 +407,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_wallet_withdrawal: {
+        Args: { _user_id: string; _withdrawal_id: string }
+        Returns: boolean
+      }
       claim_winner_number: { Args: { target_round: number }; Returns: number }
       credit_confirmed_deposit: {
         Args: { _deposit_id: string }
@@ -407,6 +455,24 @@ export type Database = {
       }
       is_current_round_winner: { Args: never; Returns: boolean }
       is_username_available: { Args: { uname: string }; Returns: boolean }
+      purchase_raffle_tickets: {
+        Args: {
+          _key: string
+          _numbers: number[]
+          _round_number: number
+          _user_id: string
+        }
+        Returns: Json
+      }
+      request_wallet_withdrawal: {
+        Args: {
+          _amount_sats: number
+          _destination: string
+          _key: string
+          _user_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "user"
